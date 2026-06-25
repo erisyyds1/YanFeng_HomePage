@@ -9,7 +9,7 @@ interface WeChatNewsColumnProps {
 
 const WeChatNewsColumn: React.FC<WeChatNewsColumnProps> = ({ news }) => {
   return (
-    <div className="flex flex-col h-[1000px] gap-6">
+    <div className="flex flex-col gap-6 min-h-[720px] lg:h-[1000px]">
       {/* Header / Title */}
       <div className="bg-[var(--theme-secondary)] border-y-4 border-[var(--theme-border)] py-4 text-center relative overflow-hidden flex-shrink-0">
           <div className="absolute top-0 left-0 w-full h-1 bg-checker-pattern opacity-10"></div>
@@ -26,6 +26,14 @@ const WeChatNewsColumn: React.FC<WeChatNewsColumnProps> = ({ news }) => {
       {/* News List (Scrollable Area) */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pr-2 py-2">
         <div className="grid gap-6">
+            {news.length === 0 && (
+              <RetroCard variant="ticket">
+                <div className="py-10 text-center text-[var(--theme-brown)]">
+                  <Info size={32} className="mx-auto mb-3 text-[var(--theme-primary)]" />
+                  <p className="font-bold">暂时没有可展示的资讯</p>
+                </div>
+              </RetroCard>
+            )}
             {news.map((item) => (
                 <RetroCard key={item.id} variant="ticket" className="transform transition-all hover:-translate-y-1 hover:shadow-lg group/card">
                     <div className="flex flex-col h-full">
@@ -35,6 +43,11 @@ const WeChatNewsColumn: React.FC<WeChatNewsColumnProps> = ({ news }) => {
                             <span className="text-xs font-mono text-[var(--theme-brown)] opacity-70 flex items-center gap-1">
                                 <Calendar size={12} /> {item.date}
                             </span>
+                            {item.tag && (
+                              <span className="text-[10px] font-bold text-white bg-[var(--theme-primary)] px-2 py-0.5 rounded border border-[var(--theme-border)]">
+                                {item.tag}
+                              </span>
+                            )}
                         </div>
 
                         {/* Title */}
@@ -54,7 +67,7 @@ const WeChatNewsColumn: React.FC<WeChatNewsColumnProps> = ({ news }) => {
                                 target.onerror = null; // Prevent infinite loop
                                 target.src = '/default_cover.png';
                               }}
-                              className="w-full h-48 object-fill transform group-hover/card:scale-105 transition-transform duration-700 filter sepia-[.3] group-hover/card:sepia-0"
+                              className="w-full h-48 object-cover transform group-hover/card:scale-105 transition-transform duration-700 filter sepia-[.3] group-hover/card:sepia-0"
                             />
                           </div>
 

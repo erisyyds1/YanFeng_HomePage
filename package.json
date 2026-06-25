@@ -7,11 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "api": "json-server db.json --port 3001"
+    "api": "node server.mjs",
+    "crawl:wechat": "node scripts/crawl-wechat.mjs",
+    "discover:wechat": "node scripts/discover-wechat.mjs"
   },
   "dependencies": {
-    "@google/genai": "^1.31.0",
-    "axios": "^1.13.2",
     "lucide-react": "^0.555.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"
@@ -19,7 +19,6 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "json-server": "^1.0.0-beta.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

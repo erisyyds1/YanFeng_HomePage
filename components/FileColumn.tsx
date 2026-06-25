@@ -8,7 +8,7 @@ interface FileColumnProps {
 
 const FileColumn: React.FC<FileColumnProps> = ({ notices }) => {
   return (
-    <div className="flex flex-col h-[1000px] gap-6">
+    <div className="flex flex-col gap-6 min-h-[640px] lg:h-[1000px]">
       {/* Summary / Archives List (Custom Red Header Card) */}
       <div className="relative group flex-1 min-h-0">
          {/* Shadow Layer */}

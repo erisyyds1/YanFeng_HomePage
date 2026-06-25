@@ -5,6 +5,20 @@ interface TimelineProps {
   events: TimelineEvent[];
 }
 
+const getParticleStyle = (eventIndex: number, particleIndex: number): React.CSSProperties => {
+  const seededRandom = (salt: number) => {
+    const value = Math.sin((eventIndex + 1) * 97 + (particleIndex + 1) * 53 + salt) * 10000;
+    return value - Math.floor(value);
+  };
+
+  return {
+    top: `${seededRandom(1) * 40 - 20}px`,
+    left: `${seededRandom(2) * 40 - 20}px`,
+    animation: `twinkle-float ${1.5 + seededRandom(3)}s ease-in-out infinite`,
+    animationDelay: `${seededRandom(4)}s`
+  };
+};
+
 const Timeline: React.FC<TimelineProps> = ({ events }) => {
 
   // Logic to determine active event based on current month
@@ -151,12 +165,7 @@ const Timeline: React.FC<TimelineProps> = ({ events }) => {
                                 <div 
                                     key={i}
                                     className="absolute w-2 h-2 text-[#f1c40f]"
-                                    style={{
-                                        top: `${Math.random() * 40 - 20}px`,
-                                        left: `${Math.random() * 40 - 20}px`,
-                                        animation: `twinkle-float ${1.5 + Math.random()}s ease-in-out infinite`,
-                                        animationDelay: `${Math.random()}s`
-                                    }}
+                                    style={getParticleStyle(index, i)}
                                 >
                                     <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full drop-shadow-sm">
                                         <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z" />

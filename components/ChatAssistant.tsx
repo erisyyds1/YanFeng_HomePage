@@ -28,11 +28,13 @@ const ChatAssistant: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const responseText = await sendMessageToDify(input);
-    
-    const botMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
-    setMessages(prev => [...prev, botMsg]);
-    setIsLoading(false);
+    try {
+      const responseText = await sendMessageToDify(input);
+      const botMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', text: responseText };
+      setMessages(prev => [...prev, botMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -99,7 +101,8 @@ const ChatAssistant: React.FC = () => {
             />
             <button 
               onClick={handleSend}
-              disabled={isLoading}
+              disabled={isLoading || !input.trim()}
+              aria-label="发送消息"
               className="bg-[var(--theme-primary)] text-white p-2 rounded-lg border-2 border-[var(--theme-border)] hover:bg-opacity-90 disabled:opacity-50"
             >
               <Send size={20} />

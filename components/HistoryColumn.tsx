@@ -8,7 +8,7 @@ interface HistoryColumnProps {
 
 const HistoryColumn: React.FC<HistoryColumnProps> = ({ data }) => {
   return (
-    <div className="relative group h-[1000px] flex flex-col">
+    <div className="relative group flex flex-col min-h-[640px] lg:h-[1000px]">
        {/* Shadow Layer */}
        <div className="absolute top-2 left-2 w-full h-full bg-[var(--theme-border)] rounded-lg opacity-20 transition-transform group-hover:translate-x-1 group-hover:translate-y-1"></div>
        

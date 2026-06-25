@@ -9,6 +9,36 @@ interface EventGalleryProps {
 
 import { fetchVideos, addVideo, deleteVideo } from '../services/videoService';
 
+const normalizeBilibiliPlayerUrl = (input: string): string | null => {
+  const trimmed = input.trim();
+  const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
+  let cleanUrl = (srcMatch?.[1] || trimmed).trim();
+
+  if (cleanUrl.startsWith('//')) {
+    cleanUrl = `https:${cleanUrl}`;
+  }
+
+  try {
+    const parsed = new URL(cleanUrl);
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'player.bilibili.com') {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+};
+
+const appendAutoplay = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set('autoplay', '1');
+    return parsed.toString();
+  } catch {
+    return url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
+  }
+};
+
 const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
@@ -21,10 +51,8 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
   const [bilibiliLink, setBilibiliLink] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [uploadCategory, setUploadCategory] = useState<VideoCategory>('daily'); // Default upload category
-  
-  // Image Upload State
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [coverPreviewUrl, setCoverPreviewUrl] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [formError, setFormError] = useState('');
   
   const [showForm, setShowForm] = useState(false);
 
@@ -48,64 +76,45 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCoverImageFile(file);
-      // Create local preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setCoverPreviewUrl(previewUrl);
-    }
-  };
-
   const handleBilibiliSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (bilibiliLink && coverImageFile && videoTitle) {
-      
-      // Extract URL from iframe code if necessary
-      let cleanUrl = bilibiliLink;
-      const srcMatch = bilibiliLink.match(/src="([^"]+)"/);
-      if (srcMatch) {
-        cleanUrl = srcMatch[1];
-      }
-      // Fix protocol-relative URLs
-      if (cleanUrl.startsWith('//')) {
-        cleanUrl = 'https:' + cleanUrl;
-      }
+    setFormError('');
 
-      // In real scenario, here we would upload the file first or convert to Base64
-      // For now, we just pass the blob URL or a placeholder, as JSON server can't handle file uploads easily without middleware
-      // We will assume the "backend" handles image storage and returns a URL. 
-      // Since we are using json-server, we'll just save the mock URL we created locally, 
-      // BUT NOTE: Blob URLs only work in the current session. 
-      // For a better persistent demo, we might want to use a static image or a placeholder service if we can't upload.
-      // Let's use the coverPreviewUrl for now, but warn user.
-      
-      const newVideoData: Omit<VideoContent, 'id'> = {
-        title: videoTitle,
-        url: cleanUrl,
-        type: 'bilibili',
-        thumbnail: coverPreviewUrl, 
-        category: uploadCategory
-      };
+    const cleanUrl = normalizeBilibiliPlayerUrl(bilibiliLink);
+    if (!videoTitle.trim() || !cleanUrl) {
+      setFormError('请填写标题，并粘贴 Bilibili 播放器链接或嵌入代码。');
+      return;
+    }
 
-      const savedVideo = await addVideo(newVideoData);
-
-      if (savedVideo) {
-          setVideos([savedVideo, ...videos]);
-          
-          // Reset form
-          setBilibiliLink('');
-          setVideoTitle('');
-          setCoverImageFile(null);
-          setCoverPreviewUrl('');
-          setShowForm(false);
-          
-          // Optionally switch to the category of the uploaded video so user can see it
-          setActiveCategory(uploadCategory); 
-      } else {
-          alert('添加失败，请检查网络或后端状态');
+    const cleanThumbnailUrl = thumbnailUrl.trim();
+    if (cleanThumbnailUrl) {
+      try {
+        new URL(cleanThumbnailUrl);
+      } catch {
+        setFormError('封面图片需要是完整 URL，例如 https://example.com/cover.jpg');
+        return;
       }
+    }
+
+    const newVideoData: Omit<VideoContent, 'id'> = {
+      title: videoTitle.trim(),
+      url: cleanUrl,
+      type: 'bilibili',
+      thumbnail: cleanThumbnailUrl,
+      category: uploadCategory
+    };
+
+    const savedVideo = await addVideo(newVideoData);
+
+    if (savedVideo) {
+        setVideos([savedVideo, ...videos]);
+        setBilibiliLink('');
+        setVideoTitle('');
+        setThumbnailUrl('');
+        setShowForm(false);
+        setActiveCategory(uploadCategory); 
+    } else {
+        setFormError('添加失败，请检查 API 服务是否启动。');
     }
   };
 
@@ -236,25 +245,31 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-[var(--theme-border)]">上传封面图</label>
+                <label className="block text-sm font-bold text-[var(--theme-border)]">封面图片 URL（可选）</label>
                 <div className="flex items-center border-2 border-[var(--theme-border)] rounded bg-white p-2">
                   <ImageIcon size={18} className="text-gray-400 mr-2" />
                   <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleImageChange}
+                    type="url" 
+                    value={thumbnailUrl}
+                    onChange={(e) => setThumbnailUrl(e.target.value)}
+                    placeholder="https://example.com/cover.jpg"
                     className="w-full outline-none bg-transparent text-black"
-                    required
                   />
                 </div>
-                {coverPreviewUrl && (
+                {thumbnailUrl && (
                   <div className="mt-2 text-xs text-gray-500">
                     <p className="mb-1">预览：</p>
-                    <img src={coverPreviewUrl} alt="Cover Preview" className="h-24 rounded border border-gray-200" />
+                    <img src={thumbnailUrl} alt="Cover Preview" className="h-24 rounded border border-gray-200 object-cover" />
                   </div>
                 )}
               </div>
             </div>
+
+            {formError && (
+              <p className="text-sm font-bold text-red-600 bg-red-50 border-2 border-red-200 rounded px-3 py-2">
+                {formError}
+              </p>
+            )}
 
             <div className="flex justify-end pt-2">
               <button 
@@ -278,7 +293,8 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
                   <div className="relative aspect-video bg-black rounded overflow-hidden group">
                       {playingVideoId === video.id ? (
                             <iframe 
-                              src={`${video.url}&autoplay=1`} 
+                              src={appendAutoplay(video.url)} 
+                              title={video.title}
                               className="w-full h-full" 
                               scrolling="no" 
                               frameBorder="0" 

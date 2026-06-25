@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Hash, Video, Settings, Menu, Star } from 'lucide-react';
+import { Hash, Video, Menu, Star } from 'lucide-react';
 import { AppTheme, NewsItem } from './types';
-import { MOCK_NEWS, TIMELINE_DATA, HISTORY_DATA } from './constants';
+import { MOCK_NEWS, TIMELINE_DATA, HISTORY_DATA, WECHAT_ARTICLES } from './constants';
 
 import EventGallery from './components/EventGallery';
 import ChatAssistant from './components/ChatAssistant';
@@ -10,21 +10,19 @@ import HistoryColumn from './components/HistoryColumn';
 import WeChatNewsColumn from './components/WeChatNewsColumn';
 import FileColumn from './components/FileColumn';
 import { fetchWeChatArticles } from './services/wechatService';
-import { WECHAT_ARTICLES } from './constants';
 import logo from './assets/logo.svg';
 
 const App: React.FC = () => {
   const [theme, setTheme] = useState<AppTheme>(() => {
     const month = new Date().getMonth() + 1;
-    // 9-11月: 冬日祭 (Winter)
+    // 9-12月: 冬日祭 (Winter)
     if (month >= 9 && month <= 12) return AppTheme.WINTER;
-    // 12-2月: GMA金枫叶 (GMA)
-    if (month === 1 || month <= 2) return AppTheme.GMA;
+    // 1-2月: GMA金枫叶 (GMA)
+    if (month <= 2) return AppTheme.GMA;
     // 其他: 常规
     return AppTheme.DEFAULT;
   });
-  const [wechatNews, setWechatNews] = useState<NewsItem[]>([]);
-  const [news, setNews] = useState<NewsItem[]>(MOCK_NEWS);
+  const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
   const [activeTab, setActiveTab] = useState<'home' | 'events'>('home');
 
   // Apply theme to body

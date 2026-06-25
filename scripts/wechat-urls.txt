@@ -1,0 +1,3 @@
+# One WeChat article URL per line.
+# The crawler can parse article metadata and upsert it into db.json.
+https://mp.weixin.qq.com/s/rTzhSB9Q0vUwc8sROPdFZQ

@@ -1,6 +1,11 @@
 import { NewsItem } from '../types';
-
 import { API_BASE_URL } from './config';
+
+interface ArticlesEnvelope {
+  data?: {
+    list?: NewsItem[];
+  };
+}
 
 export const fetchWeChatArticles = async (): Promise<NewsItem[]> => {
   try {
@@ -8,11 +13,15 @@ export const fetchWeChatArticles = async (): Promise<NewsItem[]> => {
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
-    const data = await response.json();
-    return data;
+
+    const data = (await response.json()) as NewsItem[] | ArticlesEnvelope;
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    return data.data?.list || [];
   } catch (error) {
     console.error('Failed to fetch WeChat articles:', error);
-    // Return empty array or throw, depending on error handling strategy
     return [];
   }
 };
