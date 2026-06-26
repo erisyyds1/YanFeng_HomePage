@@ -46,9 +46,21 @@
     }
   </script>
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
     body {
       background-color: #fcf8e3;
       color: #2c2c2c;
+      overflow-x: hidden;
     }
 
     /* Custom scrollbar */
@@ -83,6 +95,8 @@
       --theme-secondary: #fcf8e3;
       --theme-accent: #5d4037;
       --theme-border: #2c2c2c;
+      --theme-darkRed: #8b0000;
+      --theme-brown: #5d4037;
     }
 
     [data-theme='winter'] {
@@ -90,6 +104,8 @@
       --theme-secondary: #f0f8ff;
       --theme-accent: #2c3e50;
       --theme-border: #1a5276;
+      --theme-darkRed: #1a5276;
+      --theme-brown: #2c3e50;
     }
 
     [data-theme='gma'] {
@@ -99,6 +115,8 @@
       /* Dark */
       --theme-accent: #ffffff;
       --theme-border: #f1c40f;
+      --theme-darkRed: #f1c40f;
+      --theme-brown: #ffffff;
       color: white;
     }
 

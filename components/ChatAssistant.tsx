@@ -42,14 +42,14 @@ const ChatAssistant: React.FC = () => {
       {/* Trigger Button */}
       <button 
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 border-4 border-[var(--theme-border)] bg-[var(--theme-primary)] text-white ${isOpen ? 'hidden' : 'flex'}`}
+        className={`fixed bottom-2 right-2 sm:bottom-6 sm:right-6 z-50 p-2 sm:p-4 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 border-2 sm:border-4 border-[var(--theme-border)] bg-[var(--theme-primary)] text-white ${isOpen ? 'hidden' : 'flex'}`}
       >
-        <MessageCircle size={32} />
+        <MessageCircle className="w-5 h-5 sm:w-8 sm:h-8" />
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm h-[500px] flex flex-col bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 sm:w-full sm:max-w-sm h-[min(500px,calc(100vh-2rem))] flex flex-col bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300">
           
           {/* Header */}
           <div className="bg-[var(--theme-primary)] p-4 flex justify-between items-center text-white border-b-4 border-[var(--theme-border)]">

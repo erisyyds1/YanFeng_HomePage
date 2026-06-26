@@ -3,21 +3,26 @@ import { NewsItem, TimelineEvent, HistoryEvent } from './types';
 // RAG Knowledge Base: This text is injected into the Gemini System Instruction
 export const YANFENG_KNOWLEDGE_BASE = `
 关于檐枫动漫社 (Yanfeng Anime Club):
-1. **简介**: 檐枫动漫社是一个致力于推广ACG文化的高校社团，成立于2010年。
-2. **主要活动**:
-    - **冬日祭 (Winter Festival)**: 每年12月举办的大型舞台表演和摊位活动。
-    - **GMA (Golden Maple Awards)**: 社团内部的年度颁奖典礼，表彰优秀作品和成员。
-    - **社庆**: 每年5月举办，庆祝社团生日。
-3. **部门架构**:
-    - **Cosplay部**: 负责舞台剧、平面拍摄。
-    - **宅舞部**: 负责各类舞蹈排练与演出。
-    - **声乐部**: 翻唱、乐队演出。
-    - **绘画部**: 负责宣传海报绘制、周边设计。
-    - **后勤部**: 道具制作、场地布置。
-4. **近期大事件**:
-    - 2023年冬日祭主题为“时空列车”。
-    - 第十届GMA将于今年11月举行。
-5. **吉祥物**: 是一只名叫“枫糖”的小狐狸，戴着红色围巾。
+1. **定位**: 檐枫动漫社是北邮 ACG 爱好者的聚集地，是一个活动丰富、自由、新人友好的 ACG 综合社团。
+2. **基本信息**:
+    - 正式名称：北京邮电大学檐枫动漫社。
+    - 成立时间：2004 年。
+    - 规模：QQ 大群接近 1000 人，活跃成员近百人，核心管理层十几人。
+    - 口号：大好きだよ、みんな！含义是“最喜欢了，大家！”
+    - 社团形象：看板娘“檐枫娘”，Delta 组组娘“檐羽”。
+3. **新人友好**:
+    - 没有入社门槛，不需要会画画、会跳舞、很懂动漫或二次元浓度很高。
+    - 不强制参加活动，不强制选择唯一分组，不收社费，随时欢迎加入。
+    - 可以只看番、跳宅舞、打 Wota 艺、绘画创作、唱歌、舞台剧、文字创作、喜欢术力口、组二次元乐队，或者只是想认识朋友。
+4. **官方组**:
+    - 事务组、宅舞组、创作组、翻唱组、舞台剧组、Delta 组、番剧鉴赏组、Wota 艺组、轻音组、VOCALOID 组。
+5. **兴趣组**:
+    - Cos 组、配音组、摄影剪辑组、文艺部等，兴趣组比较自由，可以后续补充。
+6. **主要活动**:
+    - 百团大战/迎新、放映会、社团大会、冬日庆典、社庆、合宿、各组组活、GMA、宅舞教学、Wota 艺每周组活、轻音组专场、不定期联动、女仆咖啡厅等。
+    - 最能代表檐枫的是冬日庆典和社庆。
+    - GMA 是年终动画评选活动，由番剧鉴赏组负责，包含动画评选、视频剪辑、奖项设计、活动筹备和直播颁奖。
+7. **加入方式**: 加 QQ 群即可；也有公众号和 Bilibili 账号。不需要展示负责人个人联系方式。
 `;
 
 
@@ -26,7 +31,7 @@ export const WECHAT_ARTICLES: NewsItem[] = [
     id: '1',
     title: '【招新】2024秋季招新正式启动！',
     date: '2024-09-01',
-    summary: '加入我们，一起在这个秋天燃烧中二之魂！五大部门等你来挑战。',
+    summary: '没有门槛，不收社费，十个官方组和许多兴趣方向都欢迎新朋友来玩。',
     // tag removed
     // source removed
     link: '#',
@@ -43,11 +48,11 @@ export const WECHAT_ARTICLES: NewsItem[] = [
     link: '#',
     // coverUrl: 'https://picsum.photos/seed/yanfeng2/400/200'
   },
-   {
+  {
     id: '3',
     title: '【GMA前瞻】入围名单大公开！',
     date: '2024-10-25',
-    summary: '究竟花落谁家？年度最佳Cosplay奖项竞争激烈。',
+    summary: '年终动画评选活动正在筹备中，剪辑、奖项设计和直播颁奖都在推进。',
     // tag removed
     // tag removed
     // source removed
@@ -143,17 +148,15 @@ export const MOCK_NEWS: NewsItem[] = [
 ];
 
 export const HISTORY_DATA: HistoryEvent[] = [
-  { year: '2004', title: '社团成立', description: '几位热爱动漫的学长学姐在旧活动室创立了檐枫。' },
-  { year: '2012', title: '社刊创刊', description: '首期《檐艺》正式发行，收录社员原创图文作品。' },
-  { year: '2015', title: '首届GMA', description: '确立了年度颁奖典礼的传统，标志着社团正规化。' },
-  { year: '2019', title: '全省高校金奖', description: '《代号：枫》舞台剧荣获全省高校动漫联展金奖。' },
-  { year: '2021', title: '云端相聚', description: '在特殊时期成功举办首届线上冬日祭，连接你我。' },
-  { year: '2023', title: '百人社团', description: '注册会员突破500人，活跃干事超过100人。' },
+  { year: '2004', title: '社团成立', description: '檐枫动漫社正式成立，逐渐成为北邮 ACG 爱好者的聚集地。' },
+  { year: '现在', title: '近千人社群', description: 'QQ 大群接近 1000 人，活跃成员近百人，核心管理层十几人。' },
+  { year: '日常', title: '自由参加', description: '成员可以自由参与官方组、兴趣组和日常活动，不强制选择唯一方向。' },
+  { year: '每年', title: '代表活动', description: '冬日庆典、社庆、GMA、百团大战和各组组活构成檐枫的活动节奏。' },
 ];
 
 export const TIMELINE_DATA: TimelineEvent[] = [
-  { month: '10月', title: '社团游园会&社团大会' },
-  { month: '12月', title: '冬日祭' },
-  { month: '2月', title: 'GMA&新年祭' },
+  { month: '9-10月', title: '百团大战 / 迎新' },
+  { month: '12月', title: '冬日庆典' },
+  { month: '年终', title: 'GMA 动画评选' },
   { month: '5月', title: '社庆' },
 ];
