@@ -15,17 +15,6 @@ export interface NewsItem {
   coverUrl?: string;
 }
 
-export interface TimelineEvent {
-  month: string;
-  title: string;
-}
-
-export interface HistoryEvent {
-  year: string;
-  title: string;
-  description: string;
-}
-
 export type VideoCategory = 'winter' | 'anniversary' | 'gma' | 'daily';
 
 export interface VideoContent {

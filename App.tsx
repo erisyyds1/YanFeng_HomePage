@@ -1,28 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Archive,
-  BookOpen,
+  ArrowRight,
   CalendarDays,
+  ChevronRight,
   Clapperboard,
-  Film,
   Gamepad2,
-  Hash,
   HeartHandshake,
   Home,
-  Info,
   Megaphone,
-  MessageCircle,
   Mic2,
   Music2,
-  Newspaper,
   NotebookPen,
   PenTool,
   Radio,
   Send,
-  Sparkles,
+  ShieldCheck,
   Star,
   Theater,
-  Ticket,
   Trophy,
   UserPlus,
   Users,
@@ -30,194 +24,172 @@ import {
   Wand2
 } from 'lucide-react';
 import { AppTheme, NewsItem } from './types';
-import { TIMELINE_DATA, WECHAT_ARTICLES } from './constants';
+import { WECHAT_ARTICLES } from './constants';
 
 import ChatAssistant from './components/ChatAssistant';
 import EventGallery from './components/EventGallery';
-import RetroCard from './components/RetroCard';
-import Timeline from './components/Timeline';
 import { fetchWeChatArticles } from './services/wechatService';
 import logo from './assets/logo.svg';
 
-type AnchorId = 'home' | 'about' | 'groups' | 'activities' | 'videos' | 'rhythm' | 'join';
+type AnchorId = 'home' | 'about' | 'groups' | 'activities' | 'media' | 'join';
 
 interface OfficialGroup {
   title: string;
+  label: string;
+  qq: string;
   description: string;
   newcomerNote: string;
   activities: string[];
   icon: React.ElementType;
-  accent: string;
-  qq: string;
 }
 
 interface ActivityItem {
   title: string;
-  time: string;
+  kicker: string;
   description: string;
-  highlights: string[];
+  details: string[];
   icon: React.ElementType;
 }
 
-interface JoinFact {
-  title: string;
-  text: string;
-  icon: React.ElementType;
-}
+const HERO_IMAGE = '/image/yanfeng-hero.jpg';
 
 const NAV_ITEMS: { label: string; target: AnchorId; icon: React.ElementType }[] = [
   { label: '首页', target: 'home', icon: Home },
-  { label: '社团介绍', target: 'about', icon: Info },
-  { label: '分组介绍', target: 'groups', icon: Users },
-  { label: '活动回顾', target: 'activities', icon: CalendarDays },
-  { label: '活动录像', target: 'videos', icon: Video },
-  { label: '加入我们', target: 'join', icon: UserPlus }
+  { label: '檐枫是什么', target: 'about', icon: ShieldCheck },
+  { label: '小组', target: 'groups', icon: Users },
+  { label: '活动', target: 'activities', icon: CalendarDays },
+  { label: '录像', target: 'media', icon: Video },
+  { label: '加入', target: 'join', icon: UserPlus }
 ];
-
-const HERO_IMAGE = '/image/yanfeng-hero.jpg';
 
 const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '事务组',
-    description: '负责社团事务、活动组织支持和现场执行，让每一次晚会、摊位和组活顺利发生。',
-    newcomerNote: '适合愿意做组织、协调、搬运设备、现场支援和活动执行的同学。',
-    activities: ['活动筹备', '现场执行', '设备物料', '社团支持'],
-    icon: Megaphone,
-    accent: 'Support',
-    qq: '1054869730'
+    label: 'SUPPORT',
+    qq: '1054869730',
+    description: '协助举办社团内各类大小活动，是冬日庆典、社庆、百团等活动顺利进行的重要后勤力量。',
+    newcomerNote: '适合愿意做组织、协调、设备调试、后勤支持和现场执行的同学。',
+    activities: ['设备调试', '后勤支持', '活动协助', '大型活动保障'],
+    icon: Megaphone
   },
   {
     title: '宅舞组',
-    description: '一起约舞、练舞、教学、排练节目，也会录制宅舞视频和准备晚会舞台。',
-    newcomerNote: '零基础可以来学，每学期会有社舞教学和群舞教学。',
-    activities: ['日常约舞', '社舞教学', '群舞教学', '晚会节目'],
-    icon: Music2,
-    accent: 'Dance',
-    qq: '1018528156'
+    label: 'DANCE',
+    qq: '1018528156',
+    description: '檐枫大型晚会中重要的节目来源。一起约舞、练舞、教学、排练节目，也会录制宅舞视频。',
+    newcomerNote: '无论是否有基础，只要对宅舞感兴趣，都欢迎加入。',
+    activities: ['日常约舞', '社舞教学', '群舞教学', '视频录制'],
+    icon: Music2
   },
   {
     title: '创作组',
-    description: '围绕绘画、手书、视频剪辑、音乐制作、文字和视觉创作，为活动留下可看的记录。',
-    newcomerNote: '会画画很好，不会也可以从想法、排版、协作和学习开始。',
-    activities: ['绘画创作', '视频剪辑', '手书作品', '看板娘创作'],
-    icon: PenTool,
-    accent: 'Create',
-    qq: '496866658'
+    label: 'CREATE',
+    qq: '496866658',
+    description: '热爱绘画、设计、文字、音乐、后期等同学们的大家庭，涵盖泛 ACGN 文化相关创作。',
+    newcomerNote: '可以分享作品，也可以从观摩、学习、协作开始。',
+    activities: ['绘画设计', '手书', '视频剪辑', '作品交流'],
+    icon: PenTool
   },
   {
     title: '翻唱组',
-    description: '进行翻唱相关活动，开学后有新生歌会，日常也会有不定期 KTV 聚会。',
-    newcomerNote: '喜欢唱歌、听歌、录音或想在晚会上唱一首 ACG 歌都可以来。',
+    label: 'VOCAL',
+    qq: '745254525',
+    description: '面向所有热爱 ACG 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
+    newcomerNote: '觉得自己水平还不够也没关系，唱得开心才是最重要的目标。',
     activities: ['新生歌会', 'KTV 聚会', '翻唱交流', '晚会节目'],
-    icon: Mic2,
-    accent: 'Cover',
-    qq: '745254525'
+    icon: Mic2
   },
   {
     title: '舞台剧组',
-    description: '进行舞台剧创作和演出，把故事、角色、台词和舞台调度一起做出来。',
-    newcomerNote: '喜欢演戏、写剧本、做道具、上台或幕后协作都能找到位置。',
-    activities: ['剧本创作', '舞台排练', '角色演出', '幻电战争系列'],
-    icon: Theater,
-    accent: 'Stage',
-    qq: '912127654'
+    label: 'STAGE',
+    qq: '912127654',
+    description: '爱好表演、舞台剧、剧本创作和 cos 的大家聚在一起玩的地方。',
+    newcomerNote: '对表演、剧本、舞台或幕后协作感兴趣都可以来。',
+    activities: ['剧本创作', '舞台排练', '角色演出', 'Cos 协作'],
+    icon: Theater
   },
   {
     title: 'Delta 组',
-    description: '提供创作与分享的平台，也协助事务组进行社团活动预热与宣传。',
-    newcomerNote: '适合喜欢写文、杂谈、采访、安利作品和用文字表达的人。',
+    label: 'DELTA',
+    qq: '290772952',
+    description: '提供创作与分享的平台，也协助事务组进行社团活动的预热与宣传。',
+    newcomerNote: '适合分享作品、写杂谈、做采访、安利动漫游戏小说等泛 ACGN 内容。',
     activities: ['文字创作', '作品安利', '记者采访', '推文放送'],
-    icon: NotebookPen,
-    accent: 'Words',
-    qq: '290772952'
-  },
-  {
-    title: '番剧鉴赏组',
-    description: '日常水群讨论喜欢的动画，也负责 GMA 年终动画评选活动。',
-    newcomerNote: '不需要阅片量很大，只要愿意聊天、安利、剪辑或参与评选都可以。',
-    activities: ['番剧讨论', 'GMA 筹备', '视频剪辑', '直播颁奖'],
-    icon: Film,
-    accent: 'Anime',
-    qq: '924171013'
+    icon: NotebookPen
   },
   {
     title: 'Wota 艺组',
-    description: '用应援棒描绘光与影，进行 Wota 艺练习、教学、表演和企划视频录制。',
-    newcomerNote: '新人不需要基础，可以从每周三、周六晚上的教学和组活练习开始。',
-    activities: ['每周组活', 'Wota 教学', '晚会表演', '企划视频'],
-    icon: Clapperboard,
-    accent: 'Wota',
-    qq: '876209001'
+    label: 'WOTA',
+    qq: '876209001',
+    description: '用应援棒描绘光与影。每周常有教学和练习，也会进行表演和企划视频录制。',
+    newcomerNote: '新人不需要基础，可以从周三、周六晚上的组活练习开始。',
+    activities: ['Wota 教学', '组活练习', '晚会表演', '企划视频'],
+    icon: Clapperboard
   },
   {
     title: '轻音组',
-    description: '面向乐器、乐队和 ACG 音乐爱好者，交流资源、技术讨论，也能合作组队。',
-    newcomerNote: '会乐器、想组乐队、想唱歌或只是想认识乐队同好都欢迎。',
-    activities: ['组乐队', '专场 live', '歌曲分享', '晚会演出'],
-    icon: Radio,
-    accent: 'Band',
-    qq: '914316313'
+    label: 'BAND',
+    qq: '914316313',
+    description: '面向乐器、乐队和 ACG 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。',
+    newcomerNote: '乐器高手、练习新手，甚至只是想点歌听的纯路人都欢迎。',
+    activities: ['琴技交流', '乐队组建', '专场 Live', 'ACG 音乐讨论'],
+    icon: Radio
   },
   {
     title: 'VOCALOID 组',
-    description: '以泛 VOCALOID 创作为中心，也交流 Synthesizer V、CeVIO、UTAU 和更广泛的日系音乐。',
-    newcomerNote: '喜欢术力口、歌姬调声、音乐创作或只是想找同好都可以来。',
-    activities: ['作品翻调', '原创曲目', '调校教学', '术力口交流'],
-    icon: Wand2,
-    accent: 'Vocaloid',
-    qq: '361980809'
+    label: 'VOCALOID',
+    qq: '361980809',
+    description: '以泛 VOCALOID 创作为中心，也交流 Synthesizer V、CeVIO、UTAU 等音声合成内容。',
+    newcomerNote: '术术人、创作者、音乐萌新或只是想找到同好，都可以获得独特体验。',
+    activities: ['作品翻调', '原创曲目', '调校教学', '作编曲教学'],
+    icon: Wand2
   }
 ];
 
-const INTEREST_GROUPS = ['明日方舟组', '东方组', '术力口组', 'Cos 组', '配音组', '摄影剪辑组', '文艺部', '更多自由方向'];
+const INTEREST_GROUPS = ['番剧鉴赏组', '明日方舟组', '东方组', '术力口组', 'Cos 组', '配音组', '摄影剪辑组', '文艺部', '更多自由方向'];
 
 const ACTIVITIES: ActivityItem[] = [
   {
     title: '百团大战 / 迎新',
-    time: '开学约一个月后',
-    description: '新生接触檐枫的重要入口。会有摊位、节目表演、社团介绍、抽奖和现场交流。',
-    highlights: ['摊位介绍', '节目表演', '抽奖互动'],
+    kicker: 'ENTRY POINT',
+    description: '新生接触檐枫的重要入口。摊位、节目表演、社团介绍、抽奖和现场交流都会在这里发生。',
+    details: ['开学约一个月后', '摊位介绍', '节目表演'],
     icon: Megaphone
   },
   {
     title: '冬日庆典',
-    time: '12 月左右',
-    description: '第一学期末的大型晚会，乐队、宅舞、翻唱、舞台剧、手书、Wota 艺都会在这里出现。',
-    highlights: ['大型晚会', '多组节目', '社团代表活动'],
+    kicker: '1ST TERM FINALE',
+    description: '第一学期末的大型晚会。乐队、宅舞、翻唱、舞台剧、创作组手书、Wota 艺都会在这里出现。',
+    details: ['12 月左右', '大型晚会', '多组节目'],
     icon: Star
   },
   {
     title: '社庆',
-    time: '5 月左右',
-    description: '第二学期末的大型晚会，是节目展示，也是社团回忆和归属感聚在一起的时候。',
-    highlights: ['周年纪念', '舞台节目', '社团回忆'],
+    kicker: 'ANNIVERSARY',
+    description: '第二学期末的大型晚会。不只是节目展示，也承载着社团回忆、成员情感和归属感。',
+    details: ['5 月左右', '周年纪念', '舞台节目'],
     icon: HeartHandshake
   },
   {
     title: 'GMA',
-    time: '年终动画评选',
-    description: '由番剧鉴赏组负责的动画评选活动，包含剪辑、奖项设计、活动筹备和直播颁奖。',
-    highlights: ['动画评选', '视频剪辑', '直播颁奖'],
+    kicker: 'ANIME AWARDS',
+    description: '檐枫的年终动画评选活动，包含动画评选、视频剪辑、奖项设计、活动筹备和直播颁奖。',
+    details: ['年终评选', '视频制作', '直播颁奖'],
     icon: Trophy
   },
   {
     title: '日常活动',
-    time: '平时不定期',
+    kicker: 'DAILY LIFE',
     description: '放映会、各组组活、练舞、Wota 教学、合宿、联合观影、轻音专场和高校联动。',
-    highlights: ['轻松日常', '自由参加', '认识朋友'],
+    details: ['不定期', '自由参加', '认识朋友'],
     icon: Gamepad2
   }
-];
-
-const JOIN_FACTS: JoinFact[] = [
-  { title: '没有门槛', text: '不需要会画画、会跳舞、很懂动漫或二次元浓度很高。', icon: Sparkles },
-  { title: '自由参加', text: '不强制参加活动，也不强制只选一个组，可以同时参与多个方向。', icon: Ticket },
-  { title: '不收社费', text: '加入方式很简单，加 QQ 群即可，随时欢迎。', icon: Send }
 ];
 
 const App: React.FC = () => {
   const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
   const [activeTab, setActiveTab] = useState<'home' | 'events'>('home');
+  const [selectedGroup, setSelectedGroup] = useState(0);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', AppTheme.DEFAULT);
@@ -252,512 +224,379 @@ const App: React.FC = () => {
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
   };
 
+  const activeGroup = OFFICIAL_GROUPS[selectedGroup];
+  const GroupIcon = activeGroup.icon;
   const latestNews = wechatNews.slice(0, 3);
 
   return (
-    <div className="min-h-screen font-sans pb-20 relative overflow-x-hidden">
-      <div className="fixed left-0 top-0 w-4 md:w-8 h-full checker-bg z-0 border-r-4 border-[var(--theme-border)] hidden md:block"></div>
-      <div className="fixed right-0 top-0 w-4 md:w-8 h-full checker-bg z-0 border-l-4 border-[var(--theme-border)] hidden md:block"></div>
+    <div className="min-h-screen bg-[#080808] text-[#f6f0dc] font-sans overflow-x-hidden selection:bg-[#c8322a] selection:text-white">
+      <div className="fixed inset-0 pointer-events-none opacity-[0.08] checker-bg"></div>
 
-      <div className="relative z-10 w-full max-w-[1500px] mx-auto px-4 md:px-12 py-6 md:py-8">
-        <header className="mb-8 md:mb-12">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <button
-              type="button"
-              onClick={() => showHomeSection('home')}
-              className="group cursor-pointer flex items-center gap-5 xl:gap-8 transform -rotate-2 hover:rotate-0 transition-transform duration-300 origin-left text-left"
-            >
-              <div className="relative w-20 h-20 md:w-24 md:h-24 xl:w-32 xl:h-32 flex-shrink-0">
-                <div className="absolute inset-0 bg-[var(--theme-primary)] rounded-full border-[3px] border-[var(--theme-border)] shadow-[4px_4px_0px_var(--theme-border)] flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 border-2 border-dashed border-white/50 rounded-full m-1"></div>
-                  <div
-                    className="w-16 h-16 md:w-20 md:h-20 xl:w-28 xl:h-28 bg-[var(--theme-secondary)]"
-                    style={{
-                      maskImage: `url(${logo})`,
-                      WebkitMaskImage: `url(${logo})`,
-                      maskSize: 'contain',
-                      WebkitMaskSize: 'contain',
-                      maskRepeat: 'no-repeat',
-                      WebkitMaskRepeat: 'no-repeat',
-                      maskPosition: 'center',
-                      WebkitMaskPosition: 'center'
-                    }}
-                  />
-                </div>
-                <div className="absolute -top-2 -right-2 text-[var(--theme-primary)] bg-[var(--theme-secondary)] rounded-full p-1 border-2 border-[var(--theme-border)]">
-                  <Star className="w-3 h-3 xl:w-5 xl:h-5" fill="currentColor" />
-                </div>
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-[var(--theme-accent)] text-[var(--theme-secondary)] text-[10px] xl:text-xs font-bold px-2 py-0.5 xl:px-3 xl:py-1 rounded border-2 border-[var(--theme-border)] whitespace-nowrap shadow-sm z-10">
-                  EST. 2004
-                </div>
-              </div>
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-8">
+          <button type="button" onClick={() => showHomeSection('home')} className="flex items-center gap-3 text-left">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000]">
+              <span
+                className="h-8 w-8 bg-white"
+                style={{
+                  maskImage: `url(${logo})`,
+                  WebkitMaskImage: `url(${logo})`,
+                  maskSize: 'contain',
+                  WebkitMaskSize: 'contain',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskPosition: 'center',
+                  WebkitMaskPosition: 'center'
+                }}
+              />
+            </span>
+            <span>
+              <span className="block text-lg font-black leading-none tracking-[0.18em] text-white">檐枫</span>
+              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.28em] text-white/50">YANFENG ACGN</span>
+            </span>
+          </button>
 
-              <div className="flex flex-col items-start gap-1">
-                <span className="bg-[var(--theme-border)] text-[var(--theme-secondary)] text-[10px] md:text-xs xl:text-sm font-black px-2 py-1 rounded-sm transform -skew-x-12 uppercase tracking-tighter">
-                  YANFENG ACGN FAN CLUB
-                </span>
-                <h1
-                  className="text-5xl md:text-6xl xl:text-7xl font-retro text-[var(--theme-primary)] leading-[0.85] tracking-wide"
-                  style={{
-                    textShadow: '2px 2px 0px var(--theme-secondary), 4px 4px 0px var(--theme-border)',
-                    WebkitTextStroke: '1.5px var(--theme-border)'
-                  }}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const handleClick = () => (item.target === 'media' ? showVideos() : showHomeSection(item.target));
+              return (
+                <button
+                  key={item.target}
+                  type="button"
+                  onClick={handleClick}
+                  className="group flex items-center gap-2 border border-white/10 px-4 py-2 text-xs font-black tracking-[0.16em] text-white/70 transition hover:border-[#c8322a] hover:bg-[#c8322a] hover:text-white"
                 >
-                  檐枫
-                </h1>
-                <p className="text-[var(--theme-primary)] font-bold text-xs md:text-sm xl:text-lg tracking-[0.3em]">
-                  大好きだよ、みんな！
-                </p>
-              </div>
-            </button>
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
 
-            <nav className="bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg shadow-[4px_4px_0px_var(--theme-border)] p-2">
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
-                {NAV_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  const isVideos = item.target === 'videos';
-                  const active = isVideos ? activeTab === 'events' : activeTab === 'home' && item.target === 'home';
-
-                  return (
-                    <button
-                      key={item.target}
-                      type="button"
-                      onClick={() => (isVideos ? showVideos() : showHomeSection(item.target))}
-                      className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded border-2 text-xs font-black transition-all ${
-                        active
-                          ? 'bg-[var(--theme-primary)] border-[var(--theme-border)] text-white shadow-[2px_2px_0px_var(--theme-border)]'
-                          : 'bg-white border-[var(--theme-border)] text-[var(--theme-border)] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_var(--theme-border)]'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-          </div>
-        </header>
-
-        <main>
-          {activeTab === 'home' ? (
-            <div className="space-y-14 md:space-y-20">
-              <section
-                id="home"
-                className="relative w-full max-w-full bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg shadow-[8px_8px_0px_var(--theme-border)] overflow-hidden scroll-mt-8"
+          <button
+            type="button"
+            onClick={() => showHomeSection('join')}
+            className="shrink-0 border border-[#c8322a] bg-[#c8322a] px-4 py-2 text-xs font-black tracking-[0.18em] text-white shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 md:px-5"
+          >
+            JOIN
+          </button>
+        </div>
+        <nav className="flex gap-2 overflow-x-auto border-t border-white/10 px-4 py-2 lg:hidden">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const handleClick = () => (item.target === 'media' ? showVideos() : showHomeSection(item.target));
+            return (
+              <button
+                key={item.target}
+                type="button"
+                onClick={handleClick}
+                className="flex shrink-0 items-center gap-2 border border-white/10 bg-black/45 px-3 py-2 text-[11px] font-black tracking-[0.12em] text-white/75 transition hover:border-[#c8322a] hover:bg-[#c8322a] hover:text-white"
               >
-                <div className="absolute inset-2 border-2 border-dashed border-[var(--theme-primary)] pointer-events-none rounded"></div>
-                <div className="grid lg:grid-cols-[1.05fr_0.95fr] min-h-[540px]">
-                  <div className="relative p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
-                    <div className="inline-flex w-fit items-center gap-2 border-2 border-[var(--theme-border)] bg-white px-3 py-1 rounded shadow-[3px_3px_0px_var(--theme-border)] -rotate-1 mb-6">
-                      <HeartHandshake className="w-4 h-4 text-[var(--theme-primary)]" />
-                      <span className="text-xs font-black tracking-[0.2em] uppercase text-[var(--theme-border)]">新人友好 / 没有门槛</span>
-                    </div>
+                <Icon className="h-3.5 w-3.5" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+      </header>
 
-                    <p className="font-bold text-[var(--theme-primary)] text-lg md:text-2xl mb-3">北京邮电大学 ACG 爱好者的聚集地</p>
-                    <h2
-                      className="font-retro text-[3.35rem] sm:text-[5.5rem] md:text-[7rem] lg:text-[7rem] leading-none text-[var(--theme-primary)] tracking-wide max-w-full"
-                      style={{
-                        textShadow: '3px 3px 0px var(--theme-secondary), 6px 6px 0px var(--theme-border)',
-                        WebkitTextStroke: '2px var(--theme-border)',
-                        overflowWrap: 'anywhere'
-                      }}
-                    >
-                      檐枫动漫社
-                    </h2>
-                    <figure className="lg:hidden mt-6 border-4 border-[var(--theme-border)] rounded-lg overflow-hidden bg-[var(--theme-border)] shadow-[5px_5px_0px_var(--theme-border)]">
-                      <img
-                        src={HERO_IMAGE}
-                        alt="檐枫娘主视觉"
-                        loading="eager"
-                        decoding="async"
-                        className="h-48 w-full object-cover"
-                        style={{ objectPosition: '68% 42%' }}
-                      />
-                      <figcaption className="bg-[var(--theme-primary)] text-white border-t-4 border-[var(--theme-border)] px-4 py-3">
-                        <p className="font-retro text-3xl leading-none">大好きだよ、みんな！</p>
-                        <p className="mt-1 text-xs font-bold">一起来和檐枫娘玩儿。</p>
-                      </figcaption>
-                    </figure>
-                    <p className="mt-6 max-w-3xl text-lg md:text-2xl leading-relaxed font-black text-[var(--theme-border)] break-all sm:break-words">
-                      想看番、跳宅舞、打 Wota 艺、画画写文、唱歌组乐队、演舞台剧，或者只是想认识同好，都可以来。
-                    </p>
-                    <p className="mt-4 max-w-2xl text-base md:text-lg leading-relaxed text-[var(--theme-accent)] break-all sm:break-words">
-                      檐枫是一个活动很多、氛围自由、像大家庭一样的 ACG 综合社团。不会也没关系，重点是玩得开心、认识朋友、丰富大学生活。
-                    </p>
+      {activeTab === 'home' ? (
+        <main>
+          <section id="home" className="relative min-h-screen overflow-hidden pt-28 lg:pt-20">
+            <img src={HERO_IMAGE} alt="檐枫娘主视觉" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 42%' }} />
+            <div className="absolute inset-0 bg-black/35"></div>
+            <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,.86)_34%,rgba(8,8,8,.45)_58%,rgba(8,8,8,.08)_100%)]"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-32 bg-[linear-gradient(0deg,#080808_0%,rgba(8,8,8,0)_100%)]"></div>
 
-                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                      <button
-                        type="button"
-                        onClick={() => showHomeSection('groups')}
-                        className="inline-flex items-center justify-center gap-2 bg-[var(--theme-primary)] text-white px-6 py-3 rounded border-4 border-[var(--theme-border)] shadow-[4px_4px_0px_var(--theme-border)] font-black hover:translate-y-1 hover:shadow-[2px_2px_0px_var(--theme-border)] transition-all"
-                      >
-                        <BookOpen className="w-5 h-5" />
-                        看看有哪些组
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => showHomeSection('join')}
-                        className="inline-flex items-center justify-center gap-2 bg-white text-[var(--theme-border)] px-6 py-3 rounded border-4 border-[var(--theme-border)] shadow-[4px_4px_0px_var(--theme-border)] font-black hover:translate-y-1 hover:shadow-[2px_2px_0px_var(--theme-border)] transition-all"
-                      >
-                        <Send className="w-5 h-5 text-[var(--theme-primary)]" />
-                        加入 QQ 群
-                      </button>
-                    </div>
-                  </div>
+            <div className="relative z-10 mx-auto grid min-h-[calc(100vh-5rem)] max-w-[1600px] content-center px-5 py-14 md:px-10 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="max-w-3xl">
+                <div className="mb-8 flex flex-wrap items-center gap-3">
+                  <span className="border border-[#c8322a] bg-[#c8322a] px-3 py-1 text-xs font-black tracking-[0.2em] text-white">BUPT / 2004</span>
+                  <span className="border border-white/25 bg-black/40 px-3 py-1 text-xs font-bold tracking-[0.2em] text-white/80">大好きだよ、みんな！</span>
+                </div>
 
-                  <div className="relative hidden lg:flex border-t-4 lg:border-t-0 lg:border-l-4 border-[var(--theme-border)] bg-white/70 p-5 sm:p-8 items-center">
-                    <div className="absolute inset-0 opacity-[0.08] checker-bg"></div>
-                    <div className="relative w-full">
-                      <figure className="relative border-4 border-[var(--theme-border)] rounded-lg overflow-hidden bg-[var(--theme-border)] shadow-[8px_8px_0px_var(--theme-border)]">
-                        <img
-                          src={HERO_IMAGE}
-                          alt="檐枫娘主视觉"
-                          loading="eager"
-                          decoding="async"
-                          className="h-[300px] sm:h-[420px] lg:h-[560px] w-full object-cover opacity-95"
-                          style={{ objectPosition: '68% 42%' }}
-                        />
-                        <figcaption className="absolute left-4 right-4 bottom-4 text-white bg-black/45 border-2 border-white/25 rounded p-3">
-                          <p className="inline-flex items-center gap-2 bg-white text-[var(--theme-border)] border-2 border-[var(--theme-border)] rounded px-3 py-1 text-xs font-black shadow-[3px_3px_0px_var(--theme-border)] -rotate-1">
-                            <Sparkles className="w-4 h-4 text-[var(--theme-primary)]" />
-                            看板娘 / 檐枫娘
-                          </p>
-                          <h3 className="mt-3 font-retro text-4xl sm:text-5xl leading-none drop-shadow-[3px_3px_0px_var(--theme-border)]">
-                            大好きだよ、みんな！
-                          </h3>
-                          <p className="mt-2 max-w-md text-sm sm:text-base font-bold leading-relaxed">
-                            一起来和檐枫娘玩儿。不用担心不会，大家一起学就好。
-                          </p>
-                        </figcaption>
-                      </figure>
+                <p className="text-sm font-black tracking-[0.45em] text-[#c8322a] md:text-base">北京邮电大学 ACG 爱好者的聚集地</p>
+                <h1 className="mt-4 text-[4.5rem] font-black leading-[0.86] tracking-[-0.06em] text-white md:text-[7rem] xl:text-[9rem]">
+                  檐枫
+                  <span className="block text-[#c8322a]">动漫社</span>
+                </h1>
+                <p className="mt-8 max-w-2xl text-xl font-black leading-relaxed text-white md:text-2xl">
+                  无论是偶然喜欢看看番的宅宅，还是热爱acgn，对某个领域有更深的领悟无论是拉片儿剪mad，还是调教写V曲，或是画画做手书，或是翻唱打wota艺，亦或是组乐队出cover...或者只是想认识同好，都欢迎加入檐枫动漫社！
+                </p>
 
-                      <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        {[
-                          ['正式社团', '校团委管理'],
-                          ['成立时间', '2004 年'],
-                          ['QQ 大群', '接近 1000 人'],
-                          ['加入方式', '加群即可']
-                        ].map(([label, value]) => (
-                          <div key={label} className="bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg p-3 shadow-[3px_3px_0px_var(--theme-border)]">
-                            <p className="text-[10px] font-black text-[var(--theme-primary)] tracking-[0.18em] uppercase">{label}</p>
-                            <p className="mt-1 font-bold text-sm text-[var(--theme-border)] leading-snug">{value}</p>
-                          </div>
-                        ))}
+                <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => showHomeSection('groups')}
+                    className="group flex items-center justify-center gap-3 bg-[#c8322a] px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1"
+                  >
+                    小组情报
+                    <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => showHomeSection('join')}
+                    className="flex items-center justify-center gap-3 border border-white/50 bg-black/55 px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1 hover:border-white"
+                  >
+                    加入 QQ 群
+                    <Send className="h-5 w-5 text-[#c8322a]" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-12 flex items-end justify-start lg:mt-0 lg:justify-end">
+                <div className="w-full max-w-xl border-l-4 border-[#c8322a] bg-black/55 p-5 backdrop-blur-sm">
+                  <div className="grid grid-cols-2 gap-px bg-white/20 text-sm">
+                    {[
+                      ['正式社团', '校团委管理'],
+                      ['成立时间', '2004 年'],
+                      ['社团气质', '自由 / 新人友好'],
+                      ['加入方式', '加群即可']
+                    ].map(([label, value]) => (
+                      <div key={label} className="bg-[#111] p-4">
+                        <p className="text-[10px] font-black tracking-[0.24em] text-[#c8322a]">{label}</p>
+                        <p className="mt-2 text-lg font-black text-white">{value}</p>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                </div>
-              </section>
-
-              <section id="about" className="scroll-mt-8">
-                <div className="grid lg:grid-cols-[0.88fr_1.12fr] gap-8 items-stretch">
-                  <div className="bg-[var(--theme-primary)] text-white border-4 border-[var(--theme-border)] rounded-lg p-6 md:p-8 shadow-[6px_6px_0px_var(--theme-border)] relative overflow-hidden">
-                    <div className="absolute -right-8 top-6 hidden md:block text-8xl font-black text-black/10 select-none">WELCOME</div>
-                    <p className="font-mono text-xs uppercase tracking-[0.3em] opacity-80">About Yanfeng</p>
-                    <h2 className="font-retro text-5xl md:text-6xl mt-3">檐枫是什么</h2>
-                    <p className="mt-6 text-lg leading-relaxed">
-                      北京邮电大学檐枫动漫社是隶属于校团委管理、正式登记在册的 ACG 综合兴趣类社团。它不是只给“很会的人”准备的社团：你可以只喜欢看番，可以只想认识朋友，也可以想上台、创作、组乐队、做活动。
-                    </p>
-                    <p className="mt-4 text-base leading-relaxed opacity-95">
-                      社团里有正式官方组，也有自由的兴趣组。只要加入檐枫社群，你就已经是檐枫的一份子；可以参加大型晚会，也可以只参加轻松的日常活动。
-                    </p>
-                  </div>
-
-                  <div className="grid sm:grid-cols-3 gap-5">
-                    {JOIN_FACTS.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <RetroCard key={item.title} variant="ticket" className="h-full">
-                          <div className="flex h-full flex-col gap-4">
-                            <div className="w-12 h-12 rounded border-4 border-[var(--theme-border)] bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-[3px_3px_0px_var(--theme-border)]">
-                              <Icon className="w-6 h-6" />
-                            </div>
-                            <h3 className="font-retro text-3xl text-[var(--theme-primary)]">{item.title}</h3>
-                            <p className="text-sm leading-relaxed text-[var(--theme-accent)] font-bold">{item.text}</p>
-                          </div>
-                        </RetroCard>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-
-              <section id="groups" className="scroll-mt-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 border-b-4 border-dashed border-[var(--theme-border)] pb-4">
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Official Groups</p>
-                    <h2 className="font-retro text-5xl text-[var(--theme-border)] mt-2">十个官方组</h2>
-                  </div>
-                  <p className="max-w-2xl text-[var(--theme-accent)] font-bold leading-relaxed">
-                    官方组是檐枫的正式组织结构，每个组都有自己的日常活动或组活，也会为每学期的大型晚会贡献节目和内容。
+                  <p className="mt-5 text-sm font-bold leading-relaxed text-white/70">
+                    这里首先是大家一起开心玩的地方。没有基础，浓度不高都没有关系，都可以来。
                   </p>
                 </div>
+              </div>
+            </div>
+          </section>
 
-                <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-5">
+          <section id="about" className="relative border-y border-white/10 bg-[#101010]">
+            <div className="mx-auto grid max-w-[1600px] gap-10 px-5 py-20 md:px-10 lg:grid-cols-[0.75fr_1.25fr]">
+              <div>
+                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">PROFILE / 01</p>
+                <h2 className="mt-4 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">檐枫是什么</h2>
+              </div>
+              <div className="space-y-8">
+                <p className="max-w-4xl text-2xl font-black leading-relaxed text-white md:text-4xl">
+                  北京邮电大学檐枫动漫社，是隶属于校团委管理、正式登记在册的 ACG 综合兴趣类社团。
+                </p>
+                <div className="grid gap-px bg-white/15 md:grid-cols-3">
+                  {[
+                    ['没有门槛', '不需要会画画、会跳舞、很懂动漫。'],
+                    ['自由参加', '不强制活动，也不强制只选一个组。'],
+                    ['不收社费', '加入方式很简单，加 QQ 群即可。']
+                  ].map(([title, text]) => (
+                    <div key={title} className="bg-[#151515] p-6">
+                      <p className="text-xl font-black text-[#c8322a]">{title}</p>
+                      <p className="mt-3 text-sm font-bold leading-relaxed text-white/65">{text}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="max-w-3xl text-base font-bold leading-relaxed text-white/65">
+                  只要加入檐枫社群，你就已经是檐枫的一份子。可以参加大型晚会，也可以只参加轻松日常；可以深入一个方向，也可以同时参与多个小组。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="groups" className="bg-[#080808] px-5 py-20 md:px-10">
+            <div className="mx-auto max-w-[1600px]">
+              <div className="mb-10 flex flex-col gap-4 border-b border-white/15 pb-8 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
+                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">九个官方组</h2>
+                </div>
+                <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
+                  选择一个方向开始，也可以同时参与多个方向。这里不是报名表，是檐枫的入口地图。
+                </p>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+                <div className="grid max-h-[680px] gap-2 overflow-y-auto pr-1">
                   {OFFICIAL_GROUPS.map((group, index) => {
                     const Icon = group.icon;
+                    const active = index === selectedGroup;
                     return (
-                      <RetroCard key={group.title} variant="ticket" className={`h-full ${index % 2 === 0 ? 'xl:-rotate-1' : 'xl:rotate-1'}`}>
-                        <div className="h-full flex flex-col">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="w-12 h-12 rounded border-4 border-[var(--theme-border)] bg-[var(--theme-primary)] text-white flex items-center justify-center shadow-[3px_3px_0px_var(--theme-border)] shrink-0">
-                              <Icon className="w-6 h-6" />
-                            </div>
-                            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--theme-primary)] font-black border-2 border-[var(--theme-border)] bg-white px-2 py-1 rounded">
-                              {group.accent}
-                            </span>
-                          </div>
-                          <h3 className="mt-5 font-retro text-3xl text-[var(--theme-primary)] leading-none">{group.title}</h3>
-                          <div className="mt-3 inline-flex w-fit items-center gap-2 bg-white border-2 border-[var(--theme-border)] rounded px-2 py-1 shadow-[2px_2px_0px_var(--theme-border)]">
-                            <MessageCircle className="w-3.5 h-3.5 text-[var(--theme-primary)]" />
-                            <span className="font-mono text-xs font-black text-[var(--theme-border)]">QQ群 {group.qq}</span>
-                          </div>
-                          <p className="mt-4 text-sm leading-relaxed text-[var(--theme-border)] font-bold">{group.description}</p>
-                          <div className="mt-5 pt-4 border-t-2 border-dashed border-[var(--theme-primary)]">
-                            <p className="text-xs font-black text-[var(--theme-primary)] mb-2">新人可以这样开始</p>
-                            <p className="text-xs leading-relaxed text-[var(--theme-accent)]">{group.newcomerNote}</p>
-                          </div>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {group.activities.map((activity) => (
-                              <span key={activity} className="bg-white border-2 border-[var(--theme-border)] rounded px-2 py-1 text-[11px] font-bold text-[var(--theme-border)]">
-                                {activity}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </RetroCard>
+                      <button
+                        key={group.title}
+                        type="button"
+                        onClick={() => setSelectedGroup(index)}
+                        className={`flex items-center justify-between border px-4 py-4 text-left transition ${
+                          active ? 'border-[#c8322a] bg-[#c8322a] text-white' : 'border-white/10 bg-[#121212] text-white/65 hover:border-white/35 hover:text-white'
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon className="h-5 w-5" />
+                          <span>
+                            <span className="block text-sm font-black">{group.title}</span>
+                            <span className="mt-0.5 block text-[10px] font-bold tracking-[0.22em] opacity-70">{group.label}</span>
+                          </span>
+                        </span>
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
                     );
                   })}
                 </div>
 
-                <div className="mt-8 bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg p-5 shadow-[5px_5px_0px_var(--theme-border)]">
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Interest Corners</p>
-                      <h3 className="font-retro text-4xl text-[var(--theme-border)] mt-2">自由兴趣小组</h3>
-                      <p className="mt-3 text-sm md:text-base text-[var(--theme-accent)] font-bold leading-relaxed">
-                        除了官方组，檐枫也有更自由的兴趣方向。兴趣组不是硬性组织，更像大家自然聚起来一起玩的入口。
-                      </p>
+                <div className="relative overflow-hidden border border-white/10 bg-[#121212] p-7 md:p-10">
+                  <div className="absolute right-8 top-8 text-[7rem] font-black leading-none text-white/[0.03] md:text-[12rem]">{activeGroup.label}</div>
+                  <div className="relative z-10 max-w-4xl">
+                    <div className="mb-8 flex flex-wrap items-center gap-4">
+                      <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white">
+                        <GroupIcon className="h-8 w-8" />
+                      </span>
+                      <div>
+                        <p className="text-xs font-black tracking-[0.4em] text-[#c8322a]">{activeGroup.label}</p>
+                        <h3 className="text-5xl font-black tracking-[-0.04em] text-white">{activeGroup.title}</h3>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-3">
-                      {INTEREST_GROUPS.map((group) => (
-                        <span key={group} className="bg-white border-4 border-[var(--theme-border)] rounded px-4 py-2 font-black text-[var(--theme-border)] shadow-[3px_3px_0px_var(--theme-border)]">
-                          {group}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
+                    <p className="text-2xl font-black leading-relaxed text-white md:text-4xl">{activeGroup.description}</p>
+                    <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed text-white/60">{activeGroup.newcomerNote}</p>
 
-              <section id="activities" className="scroll-mt-8">
-                <div className="bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg p-5 md:p-8 shadow-[6px_6px_0px_var(--theme-border)]">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Events</p>
-                      <h2 className="font-retro text-5xl text-[var(--theme-border)] mt-2">檐枫平时做什么</h2>
-                    </div>
-                    <div className="border-2 border-[var(--theme-border)] bg-white px-4 py-2 rounded shadow-[3px_3px_0px_var(--theme-border)] -rotate-1">
-                      <p className="font-black text-[var(--theme-primary)]">大型晚会 + 轻松日常</p>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-5">
-                    {ACTIVITIES.map((activity) => {
-                      const Icon = activity.icon;
-                      return (
-                        <article key={activity.title} className="bg-white border-4 border-[var(--theme-border)] rounded-lg p-4 shadow-[4px_4px_0px_var(--theme-border)] flex flex-col min-h-[300px]">
-                          <div className="flex items-center justify-between gap-3">
-                            <Icon className="w-8 h-8 text-[var(--theme-primary)]" />
-                            <span className="font-mono text-[11px] font-black text-[var(--theme-accent)] border-2 border-dashed border-[var(--theme-primary)] px-2 py-1 rounded">
-                              {activity.time}
-                            </span>
-                          </div>
-                          <h3 className="mt-5 font-retro text-3xl text-[var(--theme-primary)] leading-none">{activity.title}</h3>
-                          <p className="mt-4 text-sm leading-relaxed text-[var(--theme-border)] font-bold flex-1">{activity.description}</p>
-                          <div className="mt-4 pt-4 border-t-2 border-dashed border-[var(--theme-primary)] flex flex-wrap gap-2">
-                            {activity.highlights.map((tag) => (
-                              <span key={tag} className="text-[11px] bg-[var(--theme-secondary)] border-2 border-[var(--theme-border)] rounded px-2 py-1 font-bold">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </div>
-              </section>
-
-              <section id="videos" className="scroll-mt-8">
-                <div className="grid lg:grid-cols-[0.95fr_1.05fr] gap-8">
-                  <div className="bg-[var(--theme-border)] text-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg p-6 md:p-8 shadow-[6px_6px_0px_rgba(0,0,0,0.25)] relative overflow-hidden">
-                    <div className="absolute inset-x-0 top-0 h-8 bg-[var(--theme-primary)] border-b-4 border-[var(--theme-border)] flex items-center gap-2 px-4">
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
-                      <div className="w-3 h-3 bg-white rounded-full opacity-70"></div>
-                      <div className="w-3 h-3 bg-white rounded-full opacity-40"></div>
-                    </div>
-                    <div className="pt-10">
-                      <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Bilibili Archive</p>
-                      <h2 className="font-retro text-5xl mt-3 text-white">活动录像</h2>
-                      <p className="mt-5 leading-relaxed text-base opacity-90">
-                        这里保留活动录像模块，用来展示宅舞、Wota 艺、社庆、冬日庆典、GMA、轻音 live 等 Bilibili 视频。第一版先保持轻量，后续可以继续补年份分类和管理入口。
-                      </p>
-                      <div className="mt-6 grid grid-cols-2 gap-3">
-                        {['冬日庆典', '社庆', 'GMA', '组活 / 日常'].map((item) => (
-                          <div key={item} className="border-2 border-dashed border-[var(--theme-primary)] rounded p-3 text-center font-black">
-                            {item}
-                          </div>
+                    <div className="mt-10 grid gap-px bg-white/15 md:grid-cols-[220px_1fr]">
+                      <div className="bg-black p-5">
+                        <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">QQ GROUP</p>
+                        <p className="mt-2 text-2xl font-black text-white">{activeGroup.qq}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 bg-black p-5">
+                        {activeGroup.activities.map((activity) => (
+                          <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
+                            {activity}
+                          </span>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={showVideos}
-                        className="mt-7 inline-flex items-center justify-center gap-2 bg-[var(--theme-primary)] text-white px-6 py-3 rounded border-4 border-white shadow-[4px_4px_0px_rgba(255,255,255,0.25)] font-black hover:translate-y-1 transition-all"
-                      >
-                        <Video className="w-5 h-5" />
-                        打开活动录像
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg p-5 md:p-6 shadow-[6px_6px_0px_var(--theme-border)]">
-                    <div className="flex items-center justify-between gap-4 pb-4 border-b-4 border-dashed border-[var(--theme-primary)]">
-                      <div>
-                        <p className="font-mono text-xs uppercase tracking-[0.25em] text-[var(--theme-primary)] font-black">Official Account</p>
-                        <h3 className="font-retro text-4xl text-[var(--theme-border)] mt-1">公众号近况</h3>
-                      </div>
-                      <Newspaper className="w-10 h-10 text-[var(--theme-primary)]" />
-                    </div>
-                    <div className="mt-5 grid gap-4">
-                      {latestNews.map((item) => (
-                        <a
-                          key={item.id}
-                          href={item.link || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group grid sm:grid-cols-[128px_1fr] gap-4 bg-white border-4 border-[var(--theme-border)] rounded-lg p-3 shadow-[3px_3px_0px_var(--theme-border)] hover:-translate-y-0.5 transition-all"
-                        >
-                          <div className="aspect-[4/3] sm:aspect-auto sm:h-24 bg-[var(--theme-secondary)] border-2 border-[var(--theme-border)] rounded overflow-hidden">
-                            <img
-                              src={item.coverUrl || '/default_cover.png'}
-                              alt={item.title}
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.onerror = null;
-                                target.src = '/default_cover.png';
-                              }}
-                              className="w-full h-full object-cover sepia-[.25] group-hover:sepia-0 transition-all"
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-mono text-[var(--theme-accent)]">{item.date}</p>
-                            <h4 className="mt-1 font-black text-[var(--theme-border)] leading-snug group-hover:text-[var(--theme-primary)] transition-colors">
-                              {item.title}
-                            </h4>
-                            <p className="mt-2 text-sm text-[var(--theme-accent)] leading-relaxed line-clamp-2">{item.summary}</p>
-                          </div>
-                        </a>
-                      ))}
                     </div>
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <section id="rhythm" className="scroll-mt-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b-4 border-dashed border-[var(--theme-border)] pb-4">
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Year Rhythm</p>
-                    <h2 className="font-retro text-5xl text-[var(--theme-border)] mt-2">一年里的檐枫</h2>
-                  </div>
-                  <p className="max-w-2xl text-[var(--theme-accent)] font-bold leading-relaxed">
-                    时间线不再放在首屏，只作为补充：让新生大概知道什么时候能遇到百团、冬日庆典、GMA 和社庆。
-                  </p>
+              <div className="mt-10 overflow-hidden border-y border-white/15 py-4">
+                <div className="flex flex-wrap gap-3">
+                  {INTEREST_GROUPS.map((group) => (
+                    <span key={group} className="bg-white px-4 py-2 text-xs font-black tracking-[0.14em] text-black">
+                      {group}
+                    </span>
+                  ))}
                 </div>
-
-                <div className="bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] rounded-lg shadow-[6px_6px_0px_var(--theme-border)]">
-                  <Timeline events={TIMELINE_DATA} />
-                </div>
-              </section>
-
-              <section id="join" className="scroll-mt-8">
-                <div className="relative bg-[var(--theme-primary)] text-white border-4 border-[var(--theme-border)] rounded-lg overflow-hidden shadow-[8px_8px_0px_var(--theme-border)]">
-                  <div className="absolute inset-2 border-2 border-dashed border-white/40 rounded pointer-events-none"></div>
-                  <div className="grid lg:grid-cols-[0.82fr_1.18fr] gap-6 p-6 md:p-10">
-                    <div className="relative z-10">
-                      <p className="font-mono text-xs uppercase tracking-[0.3em] opacity-80">Join Us</p>
-                      <h2 className="font-retro text-6xl md:text-7xl mt-3">加入檐枫</h2>
-                      <p className="mt-6 text-lg leading-relaxed max-w-xl">
-                        加 QQ 群即可。没有社费，不限制加入时间，不强制参加活动，也不用担心“自己不够会”。你可以先潜水看看，也可以直接找感兴趣的组玩。
-                      </p>
-                      <div className="mt-7 flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-2 bg-white text-[var(--theme-border)] px-5 py-3 rounded border-4 border-[var(--theme-border)] shadow-[4px_4px_0px_rgba(0,0,0,0.25)] font-black"
-                        >
-                          <UserPlus className="w-5 h-5 text-[var(--theme-primary)]" />
-                          QQ 群二维码待补充
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="relative z-10 grid md:grid-cols-3 gap-4">
-                      {[
-                        { title: 'QQ群', value: '待补充', note: '主要加入入口，适合新生咨询和日常交流。', icon: Users },
-                        { title: '公众号', value: '涧桐现视研', note: '推文、访谈、活动回顾和正式通知入口。', icon: Newspaper },
-                        { title: 'Bilibili', value: '檐枫动漫社', note: '活动录像、舞台节目和社团投稿会放在这里。', icon: Video }
-                      ].map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <div key={item.title} className="bg-[var(--theme-secondary)] text-[var(--theme-border)] border-4 border-[var(--theme-border)] rounded-lg p-5 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
-                            <Icon className="w-8 h-8 text-[var(--theme-primary)]" />
-                            <p className="mt-4 text-xs font-black uppercase tracking-[0.2em] text-[var(--theme-primary)]">{item.title}</p>
-                            <h3 className="mt-2 font-retro text-3xl leading-none">{item.value}</h3>
-                            <p className="mt-3 text-sm leading-relaxed text-[var(--theme-accent)]">{item.note}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </section>
+              </div>
             </div>
-          ) : (
-            <section id="videos" className="scroll-mt-8">
-              <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b-4 border-dashed border-[var(--theme-border)] pb-5">
+          </section>
+
+          <section id="activities" className="bg-[#101010] px-5 py-20 md:px-10">
+            <div className="mx-auto max-w-[1600px]">
+              <div className="mb-10 grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
                 <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.3em] text-[var(--theme-primary)] font-black">Videos</p>
-                  <h2 className="font-retro text-5xl text-[var(--theme-border)] mt-2">活动录像</h2>
+                  <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">EVENTS / 03</p>
+                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">活动信号</h2>
                 </div>
+                <p className="text-xl font-black leading-relaxed text-white/75">
+                  檐枫既有每学期的大型晚会，也有放映、组活、练舞、合宿和联合观影这些轻松日常。
+                </p>
+              </div>
+
+              <div className="grid gap-px bg-white/15 lg:grid-cols-5">
+                {ACTIVITIES.map((activity, index) => {
+                  const Icon = activity.icon;
+                  return (
+                    <article key={activity.title} className={`${index === 1 ? 'bg-[#c8322a] text-white' : 'bg-[#151515] text-white'} min-h-[360px] p-6`}>
+                      <div className="flex items-start justify-between">
+                        <Icon className="h-9 w-9" />
+                        <span className="font-mono text-xs font-black opacity-60">0{index + 1}</span>
+                      </div>
+                      <p className="mt-8 text-[10px] font-black tracking-[0.28em] opacity-70">{activity.kicker}</p>
+                      <h3 className="mt-3 text-3xl font-black tracking-[-0.03em]">{activity.title}</h3>
+                      <p className="mt-5 text-sm font-bold leading-relaxed opacity-75">{activity.description}</p>
+                      <div className="mt-8 flex flex-wrap gap-2">
+                        {activity.details.map((detail) => (
+                          <span key={detail} className="border border-white/25 px-2 py-1 text-[10px] font-black">
+                            {detail}
+                          </span>
+                        ))}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section id="media" className="bg-[#080808] px-5 py-20 md:px-10">
+            <div className="mx-auto grid max-w-[1600px] gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="border border-white/10 bg-[#121212] p-8 md:p-10">
+                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">MEDIA / 04</p>
+                <h2 className="mt-4 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">活动录像</h2>
+                <p className="mt-6 text-base font-bold leading-relaxed text-white/65">
+                  宅舞、Wota 艺、社庆、冬日庆典、GMA、轻音 live 等 Bilibili 视频先保留轻量展示，后续再补年份分类和管理入口。
+                </p>
                 <button
                   type="button"
-                  onClick={() => showHomeSection('home')}
-                  className="inline-flex items-center justify-center gap-2 bg-white text-[var(--theme-border)] px-5 py-3 rounded border-4 border-[var(--theme-border)] shadow-[4px_4px_0px_var(--theme-border)] font-black hover:translate-y-1 hover:shadow-[2px_2px_0px_var(--theme-border)] transition-all"
+                  onClick={showVideos}
+                  className="mt-8 flex items-center gap-3 bg-[#c8322a] px-6 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1"
                 >
-                  <Home className="w-5 h-5 text-[var(--theme-primary)]" />
-                  回到首页
+                  打开录像库
+                  <Video className="h-5 w-5" />
                 </button>
               </div>
-              <EventGallery currentTheme={AppTheme.DEFAULT} />
-            </section>
-          )}
+
+              <div className="space-y-px bg-white/15">
+                {latestNews.length > 0 ? (
+                  latestNews.map((item) => (
+                    <a key={item.id} href={item.link || '#'} target="_blank" rel="noopener noreferrer" className="grid gap-4 bg-[#121212] p-5 transition hover:bg-[#191919] md:grid-cols-[160px_1fr]">
+                      <img src={item.coverUrl || '/default_cover.png'} alt={item.title} className="h-28 w-full object-cover" />
+                      <div>
+                        <p className="text-xs font-black tracking-[0.24em] text-[#c8322a]">{item.date}</p>
+                        <h3 className="mt-2 text-xl font-black leading-snug text-white">{item.title}</h3>
+                        <p className="mt-2 line-clamp-2 text-sm font-bold leading-relaxed text-white/55">{item.summary}</p>
+                      </div>
+                    </a>
+                  ))
+                ) : (
+                  <div className="bg-[#121212] p-8 text-white/60">公众号内容加载中。</div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section id="join" className="relative overflow-hidden bg-[#c8322a] px-5 py-20 text-white md:px-10">
+            <div className="absolute inset-0 opacity-10 checker-bg"></div>
+            <div className="relative mx-auto grid max-w-[1600px] gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+              <div>
+                <p className="text-xs font-black tracking-[0.45em] text-white/70">JOIN / 05</p>
+                <h2 className="mt-4 text-6xl font-black tracking-[-0.06em] md:text-8xl">加入檐枫</h2>
+                <p className="mt-6 max-w-2xl text-xl font-black leading-relaxed">
+                  加 QQ 群即可。没有社费，不限制加入时间，不强制参加活动，也不用担心自己不够会。
+                </p>
+              </div>
+              <div className="grid gap-px bg-white/40 md:grid-cols-3">
+                {[
+                  ['QQ群', '待补充', '主要加入入口'],
+                  ['公众号', '涧桐现视研', '推文与活动回顾'],
+                  ['Bilibili', '檐枫动漫社', '录像和投稿']
+                ].map(([title, value, note]) => (
+                  <div key={title} className="bg-[#080808] p-6">
+                    <p className="text-xs font-black tracking-[0.25em] text-[#c8322a]">{title}</p>
+                    <p className="mt-3 text-3xl font-black text-white">{value}</p>
+                    <p className="mt-3 text-sm font-bold text-white/55">{note}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
         </main>
-
-        <footer className="mt-20 border-t-4 border-[var(--theme-border)] pt-8 pb-8 text-center text-[var(--theme-accent)] bg-white/50 backdrop-blur-sm">
-          <div className="flex justify-center items-center gap-4 mb-4 opacity-50">
-            <Hash size={16} />
-            <div className="w-12 border-b-2 border-dashed border-[var(--theme-accent)] h-0"></div>
-            <Star size={16} />
-            <div className="w-12 border-b-2 border-dashed border-[var(--theme-accent)] h-0"></div>
-            <Hash size={16} />
+      ) : (
+        <main className="mx-auto max-w-[1500px] px-5 pb-20 pt-28 md:px-10">
+          <div className="mb-8 flex flex-col gap-4 border-b border-white/15 pb-6 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">VIDEOS</p>
+              <h1 className="mt-2 text-5xl font-black text-white">活动录像</h1>
+            </div>
+            <button type="button" onClick={() => showHomeSection('home')} className="border border-white/20 px-5 py-3 text-sm font-black text-white hover:border-[#c8322a] hover:bg-[#c8322a]">
+              回到首页
+            </button>
           </div>
-          <p className="font-retro text-2xl tracking-widest text-[var(--theme-primary)] drop-shadow-[1px_1px_0px_var(--theme-border)]">大好きだよ、みんな！</p>
-          <p className="text-xs mt-3 font-mono font-bold uppercase">© YANFENG ACGN FAN CLUB. All rights reserved.</p>
-        </footer>
+          <EventGallery currentTheme={AppTheme.DEFAULT} />
+        </main>
+      )}
 
-        <ChatAssistant />
-      </div>
+      <ChatAssistant />
     </div>
   );
 };

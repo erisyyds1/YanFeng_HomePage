@@ -1,4 +1,4 @@
-import { NewsItem, TimelineEvent, HistoryEvent } from './types';
+import { NewsItem } from './types';
 
 // RAG Knowledge Base: This text is injected into the Gemini System Instruction
 export const YANFENG_KNOWLEDGE_BASE = `
@@ -15,13 +15,13 @@ export const YANFENG_KNOWLEDGE_BASE = `
     - 不强制参加活动，不强制选择唯一分组，不收社费，随时欢迎加入。
     - 可以只看番、跳宅舞、打 Wota 艺、绘画创作、唱歌、舞台剧、文字创作、喜欢术力口、组二次元乐队，或者只是想认识朋友。
 4. **官方组**:
-    - 事务组、宅舞组、创作组、翻唱组、舞台剧组、Delta 组、番剧鉴赏组、Wota 艺组、轻音组、VOCALOID 组。
+    - 事务组、宅舞组、创作组、翻唱组、舞台剧组、Delta 组、Wota 艺组、轻音组、VOCALOID 组。
 5. **兴趣组**:
-    - Cos 组、配音组、摄影剪辑组、文艺部等，兴趣组比较自由，可以后续补充。
+    - 番剧鉴赏组、明日方舟组、东方组、术力口组、Cos 组、配音组、摄影剪辑组、文艺部等，兴趣组比较自由，可以后续补充。
 6. **主要活动**:
     - 百团大战/迎新、放映会、社团大会、冬日庆典、社庆、合宿、各组组活、GMA、宅舞教学、Wota 艺每周组活、轻音组专场、不定期联动、女仆咖啡厅等。
     - 最能代表檐枫的是冬日庆典和社庆。
-    - GMA 是年终动画评选活动，由番剧鉴赏组负责，包含动画评选、视频剪辑、奖项设计、活动筹备和直播颁奖。
+    - GMA 是年终动画评选活动，包含动画评选、视频剪辑、奖项设计、活动筹备和直播颁奖。
 7. **加入方式**: 加 QQ 群即可；也有公众号和 Bilibili 账号。不需要展示负责人个人联系方式。
 `;
 
@@ -31,7 +31,7 @@ export const WECHAT_ARTICLES: NewsItem[] = [
     id: '1',
     title: '【招新】2024秋季招新正式启动！',
     date: '2024-09-01',
-    summary: '没有门槛，不收社费，十个官方组和许多兴趣方向都欢迎新朋友来玩。',
+    summary: '没有门槛，不收社费，九个官方组和许多兴趣方向都欢迎新朋友来玩。',
     // tag removed
     // source removed
     link: '#',
@@ -147,16 +147,3 @@ export const MOCK_NEWS: NewsItem[] = [
   }
 ];
 
-export const HISTORY_DATA: HistoryEvent[] = [
-  { year: '2004', title: '社团成立', description: '檐枫动漫社正式成立，逐渐成为北邮 ACG 爱好者的聚集地。' },
-  { year: '现在', title: '近千人社群', description: 'QQ 大群接近 1000 人，活跃成员近百人，核心管理层十几人。' },
-  { year: '日常', title: '自由参加', description: '成员可以自由参与官方组、兴趣组和日常活动，不强制选择唯一方向。' },
-  { year: '每年', title: '代表活动', description: '冬日庆典、社庆、GMA、百团大战和各组组活构成檐枫的活动节奏。' },
-];
-
-export const TIMELINE_DATA: TimelineEvent[] = [
-  { month: '9-10月', title: '百团大战 / 迎新' },
-  { month: '12月', title: '冬日庆典' },
-  { month: '年终', title: 'GMA 动画评选' },
-  { month: '5月', title: '社庆' },
-];
