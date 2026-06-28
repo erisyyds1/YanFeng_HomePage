@@ -3,8 +3,10 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  Check,
   ChevronRight,
   Clapperboard,
+  Copy,
   Gamepad2,
   HeartHandshake,
   Home,
@@ -149,10 +151,19 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     newcomerNote: '术术人、创作者、音乐萌新或只是想找到同好，都可以获得独特体验。',
     activities: ['作品翻调', '原创曲目', '调校教学', '作编曲教学'],
     icon: Wand2
+  },
+  {
+    title: '番剧鉴赏组',
+    label: 'ANIME',
+    qq: '924171013',
+    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。',
+    newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
+    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐'],
+    icon: Video
   }
 ];
 
-const INTEREST_GROUPS = ['番剧鉴赏组', '明日方舟组', '东方组', '术力口组', 'Cos 组', '配音组', '摄影剪辑组', '文艺部', '更多自由方向'];
+const INTEREST_GROUPS = ['明日方舟组', '东方组', '拉拉组', 'Cos 组', '配音组', '摄影剪辑组', '文艺部', '更多自由方向'];
 
 const ACTIVITIES: ActivityItem[] = [
   {
@@ -195,10 +206,14 @@ const ACTIVITIES: ActivityItem[] = [
 const App: React.FC = () => {
   const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
   const [selectedGroup, setSelectedGroup] = useState(0);
+  const [copiedGroupTitle, setCopiedGroupTitle] = useState<string | null>(null);
   const [activeScreen, setActiveScreen] = useState<AnchorId>('home');
+  const [activeMediaEntry, setActiveMediaEntry] = useState<MediaContentId | null>(null);
   const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
   const [transitionDirection, setTransitionDirection] = useState(0);
   const activeScreenRef = useRef<AnchorId>('home');
+  const activeMediaEntryRef = useRef<MediaContentId | null>(null);
+  const mediaPageRef = useRef<HTMLElement | null>(null);
   const outgoingTimerRef = useRef<number | null>(null);
   const transitionLockRef = useRef(false);
   const wheelLockRef = useRef(false);
@@ -211,6 +226,13 @@ const App: React.FC = () => {
   useEffect(() => {
     activeScreenRef.current = activeScreen;
   }, [activeScreen]);
+
+  useEffect(() => {
+    activeMediaEntryRef.current = activeMediaEntry;
+    if (activeMediaEntry && mediaPageRef.current) {
+      mediaPageRef.current.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [activeMediaEntry]);
 
   useEffect(() => {
     return () => {
@@ -255,20 +277,52 @@ const App: React.FC = () => {
   };
 
   const showHomeSection = (target: AnchorId = 'home') => {
+    setActiveMediaEntry(null);
     goToScreen(target);
   };
 
-  const handlePagerWheel = (event: React.WheelEvent<HTMLElement>) => {
-    const wheelIntent = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    const scrollPanel = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-panel-scroll="true"]') : null;
+  const copyGroupNumber = async (group: OfficialGroup) => {
+    const groupNumber = group.qq.trim();
+    if (!groupNumber || groupNumber === '待补充') return;
 
-    if (scrollPanel && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-      const maxScrollTop = scrollPanel.scrollHeight - scrollPanel.clientHeight;
-      const canScrollDown = event.deltaY > 0 && scrollPanel.scrollTop < maxScrollTop - 2;
-      const canScrollUp = event.deltaY < 0 && scrollPanel.scrollTop > 2;
-      if (maxScrollTop > 2 && (canScrollDown || canScrollUp)) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(groupNumber);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = groupNumber;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setCopiedGroupTitle(group.title);
+      window.setTimeout(() => {
+        setCopiedGroupTitle((current) => (current === group.title ? null : current));
+      }, 1600);
+    } catch (error) {
+      console.error('Failed to copy group number:', error);
     }
+  };
 
+  const openMediaEntry = (entry: MediaContentId) => {
+    setActiveMediaEntry(entry);
+  };
+
+  const closeMediaEntry = () => {
+    setActiveMediaEntry(null);
+    if (activeScreenRef.current !== 'media') {
+      goToScreen('media');
+    }
+  };
+
+  const handlePagerWheel = (event: React.WheelEvent<HTMLElement>) => {
+    if (activeMediaEntryRef.current) return;
+
+    const wheelIntent = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
     if (Math.abs(wheelIntent) < 24 || wheelLockRef.current || transitionLockRef.current) {
       if (wheelLockRef.current || transitionLockRef.current) event.preventDefault();
       return;
@@ -290,6 +344,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (activeMediaEntryRef.current) {
+        if (event.key === 'Escape') closeMediaEntry();
+        return;
+      }
+
       const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
       const nextIndex =
         event.key === 'ArrowRight' || event.key === 'PageDown'
@@ -314,6 +373,7 @@ const App: React.FC = () => {
   };
 
   const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (activeMediaEntryRef.current) return;
     if (!touchStartRef.current) return;
     const touch = event.changedTouches[0];
     const deltaX = touch.clientX - touchStartRef.current.x;
@@ -329,6 +389,9 @@ const App: React.FC = () => {
 
   const activeGroup = OFFICIAL_GROUPS[selectedGroup];
   const GroupIcon = activeGroup.icon;
+  const activeMedia = activeMediaEntry ? getMediaEntry(activeMediaEntry) : null;
+  const activeGroupCanCopy = activeGroup.qq.trim() !== '' && activeGroup.qq !== '待补充';
+  const activeGroupCopied = copiedGroupTitle === activeGroup.title;
   const activeScreenIndex = SCREEN_IDS.indexOf(activeScreen);
 
   const getPanelStyle = (index: number): React.CSSProperties => {
@@ -372,6 +435,25 @@ const App: React.FC = () => {
     return 'idle';
   };
 
+  const renderMediaPlaceholder = () => {
+    if (!activeMedia) return null;
+    const MediaIcon = activeMedia.icon;
+
+    return (
+      <div className="grid min-h-[520px] place-items-center bg-white p-2 shadow-[6px_6px_0px_var(--theme-border)]">
+        <div className="flex h-full w-full flex-col items-center justify-center bg-[#111] px-6 py-16 text-center text-white">
+          <div className="flex h-20 w-20 items-center justify-center border-4 border-[#c8322a] bg-black">
+            <MediaIcon className="h-10 w-10 text-[#c8322a]" />
+          </div>
+          <p className="mt-8 text-sm font-black tracking-[0.35em] text-[#c8322a]">{activeMedia.label}</p>
+          <h3 className="mt-3 text-4xl font-black tracking-[-0.04em] md:text-5xl">{activeMedia.title}</h3>
+          <p className="mt-5 max-w-xl text-base font-bold leading-relaxed text-white/62">{activeMedia.description}</p>
+          <p className="mt-8 border border-white/18 px-4 py-3 text-sm font-black tracking-[0.16em] text-white/65">内容整理中</p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-[100dvh] bg-[#080808] text-[#f6f0dc] font-sans overflow-hidden selection:bg-[#c8322a] selection:text-white">
       <div className="fixed inset-0 pointer-events-none opacity-[0.08] checker-bg"></div>
@@ -410,7 +492,7 @@ const App: React.FC = () => {
                   type="button"
                   onClick={handleClick}
                   className={`group flex min-w-[92px] flex-col items-center justify-center border-x border-white/[0.03] px-2 text-center transition hover:bg-white/[0.04] xl:min-w-[116px] 2xl:min-w-[136px] ${
-                    active ? 'text-[#26c9f2]' : 'text-white/82 hover:text-white'
+                    active ? 'text-[#c8322a]' : 'text-white/82 hover:text-white'
                   }`}
                 >
                   <span className="block text-[15px] font-black leading-none tracking-[0.05em] md:text-[18px] xl:text-[21px]">{item.labelEn}</span>
@@ -448,12 +530,61 @@ const App: React.FC = () => {
         </nav>
       </header>
 
-      <main
-        onWheel={handlePagerWheel}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className="relative h-[100dvh] overflow-hidden"
-      >
+      {activeMedia ? (
+        <main ref={mediaPageRef} className="h-[100dvh] overflow-y-auto px-5 pb-20 pt-28 md:px-10">
+          <div className="mx-auto max-w-[1500px]">
+            <div className="mb-8 flex flex-col gap-5 border-b border-white/15 pb-6">
+              <button
+                type="button"
+                onClick={closeMediaEntry}
+                className="flex w-fit items-center gap-2 border border-white/20 px-5 py-3 text-sm font-black text-white transition hover:border-[#c8322a] hover:bg-[#c8322a]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回檐枫万象
+              </button>
+
+              <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">{activeMedia.label}</p>
+                  <h1 className="mt-2 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">{activeMedia.title}</h1>
+                  <p className="mt-4 max-w-2xl text-base font-bold leading-relaxed text-white/60">{activeMedia.description}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {MEDIA_ENTRIES.map((entry) => {
+                    const EntryIcon = entry.icon;
+                    const active = entry.id === activeMediaEntry;
+
+                    return (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        onClick={() => openMediaEntry(entry.id)}
+                        className={`flex items-center gap-2 border px-3 py-2 text-xs font-black tracking-[0.12em] transition ${
+                          active ? 'border-[#c8322a] bg-[#c8322a] text-white' : 'border-white/15 bg-black/35 text-white/65 hover:border-white/35 hover:text-white'
+                        }`}
+                      >
+                        <EntryIcon className="h-3.5 w-3.5" />
+                        {entry.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {activeMediaEntry === 'videos' && <EventGallery currentTheme={AppTheme.DEFAULT} />}
+            {activeMediaEntry === 'wechat' && <WechatArchive articles={wechatNews} />}
+            {(activeMediaEntry === 'vocaloid' || activeMediaEntry === 'gallery') && renderMediaPlaceholder()}
+          </div>
+        </main>
+      ) : (
+        <main
+          onWheel={handlePagerWheel}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="relative h-[100dvh] overflow-hidden"
+        >
         <div className="relative h-full w-full overflow-hidden">
           <section
             id="home"
@@ -526,89 +657,113 @@ const App: React.FC = () => {
             data-active={activeScreen === 'about'}
             data-state={getPanelState('about')}
             style={getPanelStyle(1)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-y-auto border-y border-white/10 bg-[#101010] lg:overflow-hidden"
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
           >
-            <div className="mx-auto grid min-h-full max-w-[1600px] content-center gap-10 px-5 py-28 md:px-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-24">
-              <div className="flex max-w-2xl flex-col justify-center">
-                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">PROFILE / 01</p>
-                <h2 className="mt-4 text-4xl font-black leading-[0.98] tracking-[-0.05em] text-white md:text-6xl xl:text-7xl">
-                  加入檐枫以后，
-                  <span className="block text-[#c8322a]">你可以怎样度过大学生活？</span>
+            <div className="pointer-events-none absolute inset-0 bg-[#070707]"></div>
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.04)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
+            <div className="pointer-events-none absolute left-0 top-24 h-px w-full bg-white/10"></div>
+            <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
+            <div className="pointer-events-none absolute left-[7%] top-0 h-full w-px bg-white/10"></div>
+            <div className="pointer-events-none absolute right-[11%] top-0 h-full w-px bg-[#c8322a]/18"></div>
+            <div className="pointer-events-none absolute -bottom-10 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[11rem]">
+              INFORMATION
+            </div>
+            <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
+
+            <div className="relative mx-auto grid h-full max-w-[1600px] gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
+              <div className="max-w-2xl">
+                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">INFORMATION / 01</p>
+                <h2 className="mt-4 text-5xl font-black leading-[0.94] tracking-[-0.05em] text-white md:text-7xl xl:text-8xl">
+                  檐枫
+                  <span className="block text-[#c8322a]">社群结构</span>
                 </h2>
-                <p className="mt-7 max-w-xl text-base font-bold leading-loose text-white/68 md:text-lg">
-                  先从 QQ 大群认识大家，再去感兴趣的小组试试看。你可以参加官方组的组活，也可以加入自由生长的兴趣组；可以上台、创作、应援、唱歌、组乐队，也可以只是看看群聊、参加几次活动、认识一些朋友。
+                <p className="mt-6 max-w-xl text-base font-bold leading-loose text-white/68 md:text-lg">
+                  檐枫不是只靠一个部门运转的社团。QQ 大群负责日常入口，官方组承接稳定组活与大型晚会，兴趣组则让同好自由聚在一起。
                 </p>
-                <div className="mt-8 flex max-w-xl flex-wrap gap-2">
-                  {['零基础 OK', '不收社费', '自由参加', '可以加入多个组', '随时加入'].map((tag) => (
-                    <span key={tag} className="border border-white/16 bg-black/35 px-3 py-2 text-xs font-black tracking-[0.08em] text-white/75">
-                      {tag}
-                    </span>
+                <div className="mt-8 grid max-w-xl grid-cols-3 gap-px bg-white/18">
+                  {[
+                    ['ENTRY', 'QQ 大群'],
+                    ['OFFICIAL', '十大官方组'],
+                    ['FREE', '兴趣组']
+                  ].map(([label, value]) => (
+                    <div key={label} className="bg-[#111] px-4 py-4">
+                      <p className="text-[10px] font-black tracking-[0.22em] text-[#c8322a]">{label}</p>
+                      <p className="mt-2 text-sm font-black text-white md:text-base">{value}</p>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div className="relative min-h-[560px] overflow-hidden border border-white/12 bg-[linear-gradient(135deg,#17110f_0%,#0c0c0c_42%,#080808_100%)] p-5 shadow-[12px_12px_0_rgb(0_0_0/0.3)] md:p-8 xl:min-h-[600px]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(200,50,42,0.2),transparent_32%),linear-gradient(90deg,rgba(255,246,222,0.06),transparent_26%,rgba(255,255,255,0.025))]"></div>
-                <div className="absolute inset-x-0 top-0 h-px bg-white/24"></div>
-                <div className="absolute bottom-0 left-0 h-28 w-full bg-[linear-gradient(0deg,rgba(200,50,42,0.12),transparent)]"></div>
-                <div className="absolute -right-20 -top-20 h-60 w-60 rotate-12 border-[34px] border-[#c8322a]/14"></div>
-                <div className="absolute bottom-7 left-7 h-28 w-20 rotate-[-10deg] border border-white/8 bg-white/[0.025]"></div>
-                <div className="relative z-10 flex min-h-[500px] flex-col justify-center gap-5">
-                  <div className="flex flex-col gap-5 border-b border-white/12 pb-5 md:flex-row md:items-end md:justify-between">
+              <div className="relative min-h-[520px] overflow-hidden border border-white/12 bg-[#0c0c0c] shadow-[10px_10px_0_rgb(0_0_0/0.28)] md:min-h-[560px]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:96px_96px]"></div>
+                <div className="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-[#c8322a]"></div>
+                <div className="pointer-events-none absolute right-6 top-6 h-16 w-16 border-r-2 border-t-2 border-[#c8322a]/45"></div>
+                <div className="pointer-events-none absolute -right-16 top-8 text-[11rem] font-black leading-none tracking-[-0.08em] text-white/[0.03] md:text-[16rem]">
+                  YF
+                </div>
+                <div className="relative z-10 grid h-full grid-rows-[auto_1fr]">
+                  <div className="flex items-center justify-between border-b border-white/12 px-5 py-4 md:px-7">
                     <div>
-                      <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">START GUIDE</p>
-                      <h3 className="mt-3 max-w-xl text-4xl font-black leading-none tracking-[-0.05em] text-white md:text-5xl">
-                        从群聊开始，
-                        <span className="block text-white/70">慢慢找到自己的位置。</span>
-                      </h3>
+                      <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">STRUCTURE FILE</p>
+                      <h3 className="mt-1 text-2xl font-black text-white md:text-3xl">从入口到小组</h3>
                     </div>
-                    <div className="w-fit border-2 border-[#c8322a] px-4 py-2 text-sm font-black tracking-[0.28em] text-[#c8322a] md:rotate-3">
-                      檐枫入门
+                    <div className="border border-[#c8322a] px-3 py-2 text-xs font-black tracking-[0.22em] text-[#c8322a]">
+                      OPEN
                     </div>
                   </div>
 
-                  <div className="grid gap-4">
-                    {[
-                      {
-                        no: '01',
-                        title: 'QQ 大群',
-                        subtitle: '檐枫的日常入口',
-                        body: '聊天、通知、活动消息、同好交流都从这里开始。加群以后，你就已经是檐枫的一份子。'
-                      },
-                      {
-                        no: '02',
-                        title: '九大官方组',
-                        subtitle: '稳定组活与大型晚会的主力',
-                        body: '事务组 / 宅舞组 / 创作组 / 翻唱组 / 舞台剧组 / Delta组 / Wota艺组 / 轻音组 / VOCALOID组'
-                      },
-                      {
-                        no: '03',
-                        title: '众多兴趣组',
-                        subtitle: '自由生长的同好空间',
-                        body: '番剧鉴赏 / 明日方舟 / 东方 / 术力口 / Cos / 配音 / 摄影剪辑 / 文艺部 / 更多……'
-                      }
-                    ].map((item, index) => (
-                      <article
-                        key={item.no}
-                        className={`relative overflow-hidden border border-white/10 bg-[#151515]/90 p-5 md:p-6 ${
-                          index === 1 ? 'md:ml-10' : index === 2 ? 'md:ml-20' : ''
-                        }`}
-                      >
-                        <div className="absolute bottom-0 right-0 text-8xl font-black leading-none text-white/[0.035]">{item.no}</div>
-                        <div className="relative z-10 grid gap-4 md:grid-cols-[120px_1fr] md:items-start">
+                  <div className="grid h-full gap-px bg-white/10 md:grid-cols-[0.86fr_1.14fr]">
+                    <article className="flex flex-col justify-between bg-[#111] p-5 md:p-7">
+                      <div>
+                        <span className="inline-flex h-12 w-12 items-center justify-center bg-[#c8322a] text-lg font-black text-white">01</span>
+                        <p className="mt-5 text-xs font-black tracking-[0.3em] text-[#c8322a]">QQ GROUP</p>
+                        <h4 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">QQ 大群</h4>
+                        <p className="mt-5 text-sm font-bold leading-loose text-white/64">
+                          檐枫的日常入口。聊天、通知、活动消息、同好交流都从这里开始。
+                        </p>
+                      </div>
+                      <div className="mt-6 border-l-4 border-[#c8322a] bg-black/35 px-4 py-3">
+                        <p className="text-sm font-black text-white">加入群聊以后，你就已经是檐枫的一份子。</p>
+                      </div>
+                    </article>
+
+                    <div className="grid gap-px bg-white/10">
+                      <article className="bg-[#151515] p-5 md:p-7">
+                        <div className="flex items-start justify-between gap-4">
                           <div>
-                            <span className={`inline-flex h-10 w-10 items-center justify-center text-sm font-black ${index === 0 ? 'bg-[#c8322a] text-white' : 'bg-white text-[#c8322a]'}`}>
-                              {item.no}
+                            <p className="text-xs font-black tracking-[0.3em] text-[#c8322a]">OFFICIAL GROUPS / 02</p>
+                            <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">十大官方组</h4>
+                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/60">稳定组活与大型晚会的主力。</p>
+                          </div>
+                          <ShieldCheck className="h-9 w-9 text-[#c8322a]" strokeWidth={2.4} />
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-2">
+                          {OFFICIAL_GROUPS.map((group) => (
+                            <span key={group.title} className="border border-white/12 bg-black/30 px-2.5 py-1.5 text-xs font-black text-white/75">
+                              {group.title}
                             </span>
-                            <p className="mt-3 text-xs font-black tracking-[0.22em] text-[#c8322a]">{item.title}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-2xl font-black tracking-[-0.03em] text-white md:text-3xl">{item.subtitle}</h4>
-                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/65">{item.body}</p>
-                          </div>
+                          ))}
                         </div>
                       </article>
-                    ))}
+
+                      <article className="bg-[#151515] p-5 md:p-7">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-xs font-black tracking-[0.3em] text-[#c8322a]">INTEREST GROUPS / 03</p>
+                            <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">众多兴趣组</h4>
+                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/60">自由生长的同好空间，想聊什么就聚成什么方向。</p>
+                          </div>
+                          <Users className="h-9 w-9 text-[#c8322a]" strokeWidth={2.4} />
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-2">
+                          {INTEREST_GROUPS.map((group) => (
+                            <span key={group} className="border border-white/12 bg-black/30 px-2.5 py-1.5 text-xs font-black text-white/75">
+                              {group}
+                            </span>
+                          ))}
+                        </div>
+                      </article>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -626,10 +781,10 @@ const App: React.FC = () => {
               <div className="mb-7 flex flex-col gap-4 border-b border-white/15 pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
-                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">九大官方组</h2>
+                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">十大官方组</h2>
                 </div>
                 <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
-                  选择一个方向开始，也可以同时参与多个方向。这里不是报名表，是檐枫的入口地图。
+                  可以同时加入多个组，无加入限制，无强制绑定。
                 </p>
               </div>
 
@@ -662,25 +817,53 @@ const App: React.FC = () => {
 
                 <div className="relative overflow-hidden border border-white/10 bg-[#121212] p-7 md:p-10">
                   <div className="absolute right-8 top-8 text-[7rem] font-black leading-none text-white/[0.03] md:text-[12rem]">{activeGroup.label}</div>
-                  <div className="relative z-10 max-w-4xl">
-                    <div className="mb-8 flex flex-wrap items-center gap-4">
-                      <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white">
-                        <GroupIcon className="h-8 w-8" />
-                      </span>
-                      <div>
-                        <p className="text-xs font-black tracking-[0.4em] text-[#c8322a]">{activeGroup.label}</p>
-                        <h3 className="text-5xl font-black tracking-[-0.04em] text-white">{activeGroup.title}</h3>
+                  <div className="relative z-10">
+                    <div className="mb-8">
+                      <div className="flex flex-wrap items-end gap-4">
+                        <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white md:h-20 md:w-20">
+                          <GroupIcon className="h-8 w-8 md:h-10 md:w-10" />
+                        </span>
+                        <div>
+                          <p className="text-xs font-black tracking-[0.4em] text-[#c8322a]">{activeGroup.label}</p>
+                          <h3 className="text-5xl font-black tracking-[-0.04em] text-white md:text-6xl">{activeGroup.title}</h3>
+                        </div>
+
+                        <div className="flex min-h-[72px] overflow-hidden bg-[#101010] text-white shadow-[4px_4px_0_rgb(0_0_0/0.28)]">
+                          <div className="flex flex-col justify-center border-l-4 border-[#c8322a] px-4 py-2">
+                            <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">QQ GROUP</p>
+                            <p className="mt-1 font-mono text-2xl font-black leading-none text-white/90 md:text-3xl">{activeGroup.qq}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyGroupNumber(activeGroup)}
+                            disabled={!activeGroupCanCopy}
+                            className={`group flex min-w-[132px] items-center justify-between gap-4 border-l border-black/35 px-4 text-left transition ${
+                              activeGroupCanCopy
+                                ? 'bg-[#c8322a] text-white hover:bg-white hover:text-[#c8322a]'
+                                : 'cursor-not-allowed bg-white/10 text-white/35'
+                            }`}
+                          >
+                            <span>
+                              <span className="block text-base font-black leading-none">{activeGroupCopied ? '已复制' : activeGroupCanCopy ? '复制群号' : '暂无群号'}</span>
+                              <span className="mt-1 block text-[10px] font-black leading-none tracking-[0.12em]">
+                                {activeGroupCopied ? 'COPIED' : activeGroupCanCopy ? 'COPY QQ' : 'NO DATA'}
+                              </span>
+                            </span>
+                            {activeGroupCopied ? (
+                              <Check className="h-5 w-5 shrink-0" />
+                            ) : (
+                              <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <p className="text-2xl font-black leading-relaxed text-white md:text-4xl">{activeGroup.description}</p>
                     <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed text-white/60">{activeGroup.newcomerNote}</p>
 
-                    <div className="mt-10 grid gap-px bg-white/15 md:grid-cols-[220px_1fr]">
-                      <div className="bg-black p-5">
-                        <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">QQ GROUP</p>
-                        <p className="mt-2 text-2xl font-black text-white">{activeGroup.qq}</p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 bg-black p-5">
+                    <div className="mt-10 bg-black p-5">
+                      <p className="mb-4 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
+                      <div className="flex flex-wrap gap-2">
                         {activeGroup.activities.map((activity) => (
                           <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
                             {activity}
@@ -693,7 +876,8 @@ const App: React.FC = () => {
               </div>
 
               <div className="mt-10 overflow-hidden border-y border-white/15 py-4">
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-black tracking-[0.18em] text-[#c8322a]">兴趣组：</span>
                   {INTEREST_GROUPS.map((group) => (
                     <span key={group} className="bg-white px-4 py-2 text-xs font-black tracking-[0.14em] text-black">
                       {group}
@@ -752,12 +936,11 @@ const App: React.FC = () => {
             id="media"
             data-active={activeScreen === 'media'}
             data-state={getPanelState('media')}
-            data-panel-scroll="true"
             style={getPanelStyle(4)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-y-auto bg-[#080808] px-5 py-28 md:px-10"
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
           >
-            <div className="mx-auto max-w-[1500px] pb-10">
-              <MediaHub articles={wechatNews} />
+            <div className="h-full w-full">
+              <MediaHub onOpenEntry={openMediaEntry} />
             </div>
           </section>
 
@@ -766,35 +949,113 @@ const App: React.FC = () => {
             data-active={activeScreen === 'join'}
             data-state={getPanelState('join')}
             style={getPanelStyle(5)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#c8322a] px-5 py-24 text-white md:px-10"
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 text-white md:px-10"
           >
-            <div className="absolute inset-0 opacity-10 checker-bg"></div>
-            <div className="relative mx-auto grid h-full max-w-[1600px] content-center gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
-              <div>
-                <p className="text-xs font-black tracking-[0.45em] text-white/70">JOIN / 05</p>
-                <h2 className="mt-4 text-6xl font-black tracking-[-0.06em] md:text-8xl">加入檐枫</h2>
-                <p className="mt-6 max-w-2xl text-xl font-black leading-relaxed">
-                  加 QQ 群即可。没有社费，不限制加入时间，不强制参加活动，也不用担心没有基础。
+            <div className="pointer-events-none absolute inset-0 bg-[#070707]"></div>
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.038)_1px,transparent_1px)] opacity-34 [background-size:160px_160px]"></div>
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-[16px] bg-[#c8322a] md:w-[22px]"></div>
+            <div className="pointer-events-none absolute left-[22px] top-0 h-full w-px bg-white/12"></div>
+            <div className="pointer-events-none absolute bottom-[14%] left-0 h-px w-full bg-white/12"></div>
+            <div className="pointer-events-none absolute right-[12%] top-0 h-full w-px bg-white/10"></div>
+            <div className="pointer-events-none absolute -bottom-10 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[12rem]">
+              JOIN US
+            </div>
+            <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
+
+            <div className="relative mx-auto grid h-full max-w-[1600px] gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+              <div className="max-w-4xl pl-3 md:pl-7">
+                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">JOIN / 05</p>
+                <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl xl:text-8xl">
+                  加入檐枫以后，
+                  <span className="block text-[#c8322a]">你可以怎样度过大学生活？</span>
+                </h2>
+                <p className="mt-7 max-w-3xl text-base font-black leading-loose text-white/78 md:text-lg xl:text-xl">
+                  先从 QQ 大群认识大家，再去感兴趣的小组试试看。你可以参加官方组的组活，也可以加入自由生长的兴趣组；可以上台、创作、应援、唱歌、组乐队，也可以只是看看群聊、参加几次活动、认识一些朋友。
                 </p>
+                <div className="mt-8 flex max-w-3xl flex-wrap gap-2">
+                  {['零基础 OK', '不收社费', '自由参加', '可以加入多个组', '随时加入'].map((tag) => (
+                    <span key={tag} className="border border-white/22 bg-black/45 px-3 py-2 text-xs font-black tracking-[0.08em] text-white/82">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-px bg-white/40 md:grid-cols-3">
-                {[
-                  ['QQ群', '待补充', '主要加入入口'],
-                  ['公众号', '涧桐现视研', '推文与活动回顾'],
-                  ['Bilibili', '檐枫动漫社', '录像和投稿']
-                ].map(([title, value, note]) => (
-                  <div key={title} className="bg-[#080808] p-6">
-                    <p className="text-xs font-black tracking-[0.25em] text-[#c8322a]">{title}</p>
-                    <p className="mt-3 text-3xl font-black text-white">{value}</p>
-                    <p className="mt-3 text-sm font-bold text-white/55">{note}</p>
+
+              <div className="relative overflow-hidden border border-white/12 bg-[#0c0c0c] shadow-[10px_10px_0_rgb(0_0_0/0.28)]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:96px_96px]"></div>
+                <div className="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-[#c8322a]"></div>
+                <div className="pointer-events-none absolute -bottom-10 -right-4 text-[8rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[12rem]">
+                  JOIN
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between border-b border-white/12 px-5 py-4 md:px-7">
+                    <div>
+                      <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ENTRY GUIDE</p>
+                      <h3 className="mt-1 text-2xl font-black text-white md:text-3xl">从这里开始</h3>
+                    </div>
+                    <UserPlus className="h-8 w-8 text-[#c8322a]" strokeWidth={2.5} />
                   </div>
-                ))}
+
+                  <div className="grid gap-px bg-white/10">
+                    <article className="bg-[#121212] p-5 md:p-7">
+                      <div className="flex items-start gap-4">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#c8322a] text-lg font-black text-white">01</span>
+                        <div>
+                          <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">QQ GROUP</p>
+                          <h4 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white">加入我们</h4>
+                          <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">
+                            加 QQ 群即可进入檐枫。群号更新后会在这里放出，也可以先通过公众号或 B 站找到我们。
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-5 grid gap-px bg-white/14 sm:grid-cols-[1fr_auto]">
+                        <div className="bg-black/42 px-4 py-4">
+                          <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">MAIN GROUP</p>
+                          <p className="mt-1 font-mono text-3xl font-black text-white">737508445</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="flex min-h-[76px] items-center justify-center gap-2 bg-[#c8322a] px-6 text-sm font-black tracking-[0.12em] text-white transition hover:bg-white hover:text-[#c8322a]"
+                        >
+                          <Send className="h-4 w-4" strokeWidth={2.8} />
+                          加入我们
+                        </button>
+                      </div>
+                    </article>
+
+                    <article className="bg-[#121212] p-5 md:p-7">
+                      <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">SOCIAL CHANNELS / 02</p>
+                      <div className="mt-4 grid gap-px bg-white/14 sm:grid-cols-2">
+                        {[
+                          ['公众号', '涧桐现视研', '推文与活动回顾'],
+                          ['Bilibili', '檐枫动漫社', '录像和投稿']
+                        ].map(([title, value, note]) => (
+                          <div key={title} className="bg-black/42 p-4">
+                            <p className="text-[10px] font-black tracking-[0.24em] text-[#c8322a]">{title}</p>
+                            <p className="mt-2 text-2xl font-black text-white">{value}</p>
+                            <p className="mt-2 text-xs font-bold leading-relaxed text-white/52">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="pointer-events-none absolute bottom-2 right-0 z-20 hidden items-center gap-3 border border-white/16 bg-[#0f0f0f]/92 px-4 py-3 shadow-[6px_6px_0_rgb(0_0_0/0.35)] md:flex">
+                <img src="/image/向日葵.jpg" alt="向日葵" className="h-14 w-14 border border-white/18 object-cover" />
+                <span>
+                  <span className="block text-[10px] font-black tracking-[0.22em] text-[#c8322a]">SITE BUILDER</span>
+                  <span className="mt-1 block text-lg font-black tracking-[0.08em] text-white">向日葵</span>
+                </span>
               </div>
             </div>
           </section>
 
         </div>
       </main>
+      )}
     </div>
   );
 };
