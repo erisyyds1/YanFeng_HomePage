@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   CalendarDays,
   ChevronRight,
@@ -26,8 +27,9 @@ import {
 import { AppTheme, NewsItem } from './types';
 import { WECHAT_ARTICLES } from './constants';
 
-import ChatAssistant from './components/ChatAssistant';
 import EventGallery from './components/EventGallery';
+import MediaHub, { getMediaEntry, MEDIA_ENTRIES, type MediaContentId } from './components/MediaHub';
+import WechatArchive from './components/WechatArchive';
 import { fetchWeChatArticles } from './services/wechatService';
 import logo from './assets/logo.svg';
 
@@ -53,14 +55,18 @@ interface ActivityItem {
 
 const HERO_IMAGE = '/image/yanfeng-hero.jpg';
 
-const NAV_ITEMS: { label: string; target: AnchorId; icon: React.ElementType }[] = [
-  { label: '首页', target: 'home', icon: Home },
-  { label: '檐枫是什么', target: 'about', icon: ShieldCheck },
-  { label: '小组', target: 'groups', icon: Users },
-  { label: '活动', target: 'activities', icon: CalendarDays },
-  { label: '录像', target: 'media', icon: Video },
-  { label: '加入', target: 'join', icon: UserPlus }
+const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React.ElementType }[] = [
+  { label: '首页', labelEn: 'INDEX', target: 'home', icon: Home },
+  { label: '情报', labelEn: 'INFORMATION', target: 'about', icon: ShieldCheck },
+  { label: '小组', labelEn: 'GROUPS', target: 'groups', icon: Users },
+  { label: '活动', labelEn: 'ACTIVITIES', target: 'activities', icon: CalendarDays },
+  { label: '万象', labelEn: 'MEDIA', target: 'media', icon: Video },
+  { label: '加入', labelEn: 'JOIN US', target: 'join', icon: UserPlus }
 ];
+
+const SCREEN_IDS: AnchorId[] = ['home', 'about', 'groups', 'activities', 'media', 'join'];
+const PAGE_TRANSITION_MS = 1180;
+const PAGE_TRANSITION_EASE = 'cubic-bezier(0.68, 0.02, 0.88, 0.58)';
 
 const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
@@ -188,11 +194,28 @@ const ACTIVITIES: ActivityItem[] = [
 
 const App: React.FC = () => {
   const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
-  const [activeTab, setActiveTab] = useState<'home' | 'events'>('home');
   const [selectedGroup, setSelectedGroup] = useState(0);
+  const [activeScreen, setActiveScreen] = useState<AnchorId>('home');
+  const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
+  const [transitionDirection, setTransitionDirection] = useState(0);
+  const activeScreenRef = useRef<AnchorId>('home');
+  const outgoingTimerRef = useRef<number | null>(null);
+  const transitionLockRef = useRef(false);
+  const wheelLockRef = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', AppTheme.DEFAULT);
+  }, []);
+
+  useEffect(() => {
+    activeScreenRef.current = activeScreen;
+  }, [activeScreen]);
+
+  useEffect(() => {
+    return () => {
+      if (outgoingTimerRef.current) window.clearTimeout(outgoingTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -208,36 +231,157 @@ const App: React.FC = () => {
     loadNews();
   }, []);
 
-  const scrollToSection = (target: AnchorId) => {
-    window.setTimeout(() => {
-      document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 0);
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const goToScreen = (target: AnchorId) => {
+    const current = activeScreenRef.current;
+    if (current === target) return;
+    if (transitionLockRef.current) return;
+
+    const currentIndex = SCREEN_IDS.indexOf(current);
+    const targetIndex = SCREEN_IDS.indexOf(target);
+
+    transitionLockRef.current = true;
+    setOutgoingScreen(current);
+    setTransitionDirection(targetIndex > currentIndex ? 1 : -1);
+    setActiveScreen(target);
+
+    if (outgoingTimerRef.current) window.clearTimeout(outgoingTimerRef.current);
+    outgoingTimerRef.current = window.setTimeout(() => {
+      setOutgoingScreen(null);
+      transitionLockRef.current = false;
+      outgoingTimerRef.current = null;
+    }, prefersReducedMotion() ? 120 : PAGE_TRANSITION_MS + 80);
   };
 
   const showHomeSection = (target: AnchorId = 'home') => {
-    setActiveTab('home');
-    scrollToSection(target);
+    goToScreen(target);
   };
 
-  const showVideos = () => {
-    setActiveTab('events');
-    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+  const handlePagerWheel = (event: React.WheelEvent<HTMLElement>) => {
+    const wheelIntent = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    const scrollPanel = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-panel-scroll="true"]') : null;
+
+    if (scrollPanel && Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      const maxScrollTop = scrollPanel.scrollHeight - scrollPanel.clientHeight;
+      const canScrollDown = event.deltaY > 0 && scrollPanel.scrollTop < maxScrollTop - 2;
+      const canScrollUp = event.deltaY < 0 && scrollPanel.scrollTop > 2;
+      if (maxScrollTop > 2 && (canScrollDown || canScrollUp)) return;
+    }
+
+    if (Math.abs(wheelIntent) < 24 || wheelLockRef.current || transitionLockRef.current) {
+      if (wheelLockRef.current || transitionLockRef.current) event.preventDefault();
+      return;
+    }
+
+    const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
+    const direction = wheelIntent > 0 ? 1 : -1;
+    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), SCREEN_IDS.length - 1);
+
+    if (nextIndex === currentIndex) return;
+
+    event.preventDefault();
+    wheelLockRef.current = true;
+    goToScreen(SCREEN_IDS[nextIndex]);
+    window.setTimeout(() => {
+      wheelLockRef.current = false;
+    }, prefersReducedMotion() ? 120 : PAGE_TRANSITION_MS);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
+      const nextIndex =
+        event.key === 'ArrowRight' || event.key === 'PageDown'
+          ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1)
+          : event.key === 'ArrowLeft' || event.key === 'PageUp'
+            ? Math.max(currentIndex - 1, 0)
+            : currentIndex;
+
+      if (nextIndex !== currentIndex) {
+        event.preventDefault();
+        goToScreen(SCREEN_IDS[nextIndex]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (!touchStartRef.current) return;
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
+    const nextIndex = deltaX < 0 ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1) : Math.max(currentIndex - 1, 0);
+    if (nextIndex !== currentIndex) goToScreen(SCREEN_IDS[nextIndex]);
   };
 
   const activeGroup = OFFICIAL_GROUPS[selectedGroup];
   const GroupIcon = activeGroup.icon;
-  const latestNews = wechatNews.slice(0, 3);
+  const activeScreenIndex = SCREEN_IDS.indexOf(activeScreen);
+
+  const getPanelStyle = (index: number): React.CSSProperties => {
+    const screen = SCREEN_IDS[index];
+    const isActive = activeScreen === screen;
+    const isOutgoing = outgoingScreen === screen;
+    const concealedFromLeft = 'polygon(-12% 0, -12% 0, 4% 100%, 4% 100%)';
+    const concealedFromRight = 'polygon(96% 0, 112% 0, 112% 100%, 96% 100%)';
+    const revealed = 'polygon(0 0, 100% 0, 100% 100%, 0 100%)';
+    const maskClip = isActive || isOutgoing ? revealed : index < activeScreenIndex ? concealedFromLeft : concealedFromRight;
+    const isVisiblePanel = isActive || isOutgoing;
+    const coverShadow =
+      isActive && outgoingScreen
+        ? transitionDirection >= 0
+          ? '-34px 0 90px rgb(0 0 0 / 0.56)'
+          : '34px 0 90px rgb(0 0 0 / 0.56)'
+        : 'none';
+
+    return {
+      zIndex: isActive ? 30 : isOutgoing ? 20 : 0,
+      clipPath: maskClip,
+      WebkitClipPath: maskClip,
+      opacity: 1,
+      filter: isOutgoing ? 'brightness(0.45) saturate(0.78)' : 'none',
+      pointerEvents: isActive ? 'auto' : 'none',
+      boxShadow: coverShadow,
+      transition: prefersReducedMotion() || !isVisiblePanel
+        ? 'none'
+        : [
+            `clip-path ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASE}`,
+            `-webkit-clip-path ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASE}`,
+            `filter ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASE}`,
+            `box-shadow ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASE}`
+          ].join(', ')
+    };
+  };
+
+  const getPanelState = (screen: AnchorId) => {
+    if (activeScreen === screen) return 'active';
+    if (outgoingScreen === screen) return 'outgoing';
+    return 'idle';
+  };
 
   return (
-    <div className="min-h-screen bg-[#080808] text-[#f6f0dc] font-sans overflow-x-hidden selection:bg-[#c8322a] selection:text-white">
+    <div className="h-[100dvh] bg-[#080808] text-[#f6f0dc] font-sans overflow-hidden selection:bg-[#c8322a] selection:text-white">
       <div className="fixed inset-0 pointer-events-none opacity-[0.08] checker-bg"></div>
 
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/75 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-8">
-          <button type="button" onClick={() => showHomeSection('home')} className="flex items-center gap-3 text-left">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000]">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/72 backdrop-blur-md">
+        <div className="flex h-[76px] items-stretch justify-between px-4 md:h-[92px] md:px-8 xl:px-12">
+          <div className="flex w-[190px] shrink-0 items-center gap-4 text-left md:w-[250px] xl:w-[300px]">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000] md:h-16 md:w-16">
               <span
-                className="h-8 w-8 bg-white"
+                className="h-10 w-10 bg-white md:h-12 md:w-12"
                 style={{
                   maskImage: `url(${logo})`,
                   WebkitMaskImage: `url(${logo})`,
@@ -251,24 +395,26 @@ const App: React.FC = () => {
               />
             </span>
             <span>
-              <span className="block text-lg font-black leading-none tracking-[0.18em] text-white">檐枫</span>
-              <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.28em] text-white/50">YANFENG ACGN</span>
+              <span className="block text-2xl font-black leading-none tracking-[0.18em] text-white md:text-3xl">檐枫</span>
+              <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.28em] text-white/50 md:text-xs">YANFENG ACGN</span>
             </span>
-          </button>
+          </div>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden flex-1 items-stretch justify-center lg:flex">
             {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const handleClick = () => (item.target === 'media' ? showVideos() : showHomeSection(item.target));
+              const active = item.target === activeScreen;
+              const handleClick = () => showHomeSection(item.target);
               return (
                 <button
                   key={item.target}
                   type="button"
                   onClick={handleClick}
-                  className="group flex items-center gap-2 border border-white/10 px-4 py-2 text-xs font-black tracking-[0.16em] text-white/70 transition hover:border-[#c8322a] hover:bg-[#c8322a] hover:text-white"
+                  className={`group flex min-w-[92px] flex-col items-center justify-center border-x border-white/[0.03] px-2 text-center transition hover:bg-white/[0.04] xl:min-w-[116px] 2xl:min-w-[136px] ${
+                    active ? 'text-[#26c9f2]' : 'text-white/82 hover:text-white'
+                  }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="block text-[15px] font-black leading-none tracking-[0.05em] md:text-[18px] xl:text-[21px]">{item.labelEn}</span>
+                  <span className="mt-2 block text-[11px] font-black leading-none tracking-[0.1em] md:text-[13px]">{item.label}</span>
                 </button>
               );
             })}
@@ -277,15 +423,16 @@ const App: React.FC = () => {
           <button
             type="button"
             onClick={() => showHomeSection('join')}
-            className="shrink-0 border border-[#c8322a] bg-[#c8322a] px-4 py-2 text-xs font-black tracking-[0.18em] text-white shadow-[4px_4px_0_#000] transition hover:-translate-y-0.5 md:px-5"
+            className="hidden w-[112px] shrink-0 flex-col items-center justify-center border-l border-white/10 bg-white/[0.03] text-white/75 transition hover:bg-[#c8322a] hover:text-white lg:flex xl:w-[136px]"
           >
-            JOIN
+            <UserPlus className="h-7 w-7 md:h-8 md:w-8" />
+            <span className="mt-2 text-[11px] font-black tracking-[0.18em]">JOIN</span>
           </button>
         </div>
         <nav className="flex gap-2 overflow-x-auto border-t border-white/10 px-4 py-2 lg:hidden">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const handleClick = () => (item.target === 'media' ? showVideos() : showHomeSection(item.target));
+            const handleClick = () => showHomeSection(item.target);
             return (
               <button
                 key={item.target}
@@ -301,37 +448,43 @@ const App: React.FC = () => {
         </nav>
       </header>
 
-      {activeTab === 'home' ? (
-        <main>
-          <section id="home" className="relative min-h-screen overflow-hidden pt-28 lg:pt-20">
+      <main
+        onWheel={handlePagerWheel}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative h-[100dvh] overflow-hidden"
+      >
+        <div className="relative h-full w-full overflow-hidden">
+          <section
+            id="home"
+            data-active={activeScreen === 'home'}
+            data-state={getPanelState('home')}
+            style={getPanelStyle(0)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden pt-28 lg:pt-20"
+          >
             <img src={HERO_IMAGE} alt="檐枫娘主视觉" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 42%' }} />
             <div className="absolute inset-0 bg-black/35"></div>
             <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,.86)_34%,rgba(8,8,8,.45)_58%,rgba(8,8,8,.08)_100%)]"></div>
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-[linear-gradient(0deg,#080808_0%,rgba(8,8,8,0)_100%)]"></div>
 
-            <div className="relative z-10 mx-auto grid min-h-[calc(100vh-5rem)] max-w-[1600px] content-center px-5 py-14 md:px-10 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="relative z-10 mx-auto grid h-full max-w-[1600px] content-center px-5 py-8 md:px-10 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="max-w-3xl">
-                <div className="mb-8 flex flex-wrap items-center gap-3">
-                  <span className="border border-[#c8322a] bg-[#c8322a] px-3 py-1 text-xs font-black tracking-[0.2em] text-white">BUPT / 2004</span>
-                  <span className="border border-white/25 bg-black/40 px-3 py-1 text-xs font-bold tracking-[0.2em] text-white/80">大好きだよ、みんな！</span>
-                </div>
-
                 <p className="text-sm font-black tracking-[0.45em] text-[#c8322a] md:text-base">北京邮电大学 ACG 爱好者的聚集地</p>
                 <h1 className="mt-4 text-[4.5rem] font-black leading-[0.86] tracking-[-0.06em] text-white md:text-[7rem] xl:text-[9rem]">
                   檐枫
                   <span className="block text-[#c8322a]">动漫社</span>
                 </h1>
-                <p className="mt-8 max-w-2xl text-xl font-black leading-relaxed text-white md:text-2xl">
-                  无论是偶然喜欢看看番的宅宅，还是热爱acgn，对某个领域有更深的领悟无论是拉片儿剪mad，还是调教写V曲，或是画画做手书，或是翻唱打wota艺，亦或是组乐队出cover...或者只是想认识同好，都欢迎加入檐枫动漫社！
+                <p className="mt-7 max-w-xl text-xl font-black leading-relaxed text-white md:text-2xl">
+                  看番、宅舞、wota艺、创作、唱歌、乐队，舞台剧，cosplay，术力口，包罗万象的超级acg社团。
                 </p>
 
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => showHomeSection('groups')}
+                    onClick={() => showHomeSection('about')}
                     className="group flex items-center justify-center gap-3 bg-[#c8322a] px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1"
                   >
-                    小组情报
+                    更多情报
                     <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
                   </button>
                   <button
@@ -339,7 +492,7 @@ const App: React.FC = () => {
                     onClick={() => showHomeSection('join')}
                     className="flex items-center justify-center gap-3 border border-white/50 bg-black/55 px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1 hover:border-white"
                   >
-                    加入 QQ 群
+                    加入我们
                     <Send className="h-5 w-5 text-[#c8322a]" />
                   </button>
                 </div>
@@ -349,60 +502,131 @@ const App: React.FC = () => {
                 <div className="w-full max-w-xl border-l-4 border-[#c8322a] bg-black/55 p-5 backdrop-blur-sm">
                   <div className="grid grid-cols-2 gap-px bg-white/20 text-sm">
                     {[
-                      ['正式社团', '校团委管理'],
-                      ['成立时间', '2004 年'],
-                      ['社团气质', '自由 / 新人友好'],
-                      ['加入方式', '加群即可']
+                      ['超多活跃成员', '历年动漫社大群接近千人，轻松找到同好'],
+                      ['超多精彩活动', '百团大战，GMA，冬日庆典 / 社庆'],
+                      ['零门槛加入', '无社费无审核，零门槛加入'],
+                      ['自由参加', '自由参加喜欢的活动，无绑定无强制']
                     ].map(([label, value]) => (
-                      <div key={label} className="bg-[#111] p-4">
-                        <p className="text-[10px] font-black tracking-[0.24em] text-[#c8322a]">{label}</p>
-                        <p className="mt-2 text-lg font-black text-white">{value}</p>
+                      <div key={label} className="min-h-[118px] bg-[#111] p-5">
+                        <p className="text-sm font-black leading-snug tracking-[0.08em] text-[#c8322a] md:text-base">{label}</p>
+                        <p className="mt-3 text-lg font-black leading-snug text-white md:text-xl">{value}</p>
                       </div>
                     ))}
                   </div>
                   <p className="mt-5 text-sm font-bold leading-relaxed text-white/70">
-                    这里首先是大家一起开心玩的地方。没有基础，浓度不高都没有关系，都可以来。
+                    这里首先是大家一起开心玩的地方。没有基础，浓度不高都没有关系，都欢迎加入。
                   </p>
                 </div>
               </div>
             </div>
           </section>
 
-          <section id="about" className="relative border-y border-white/10 bg-[#101010]">
-            <div className="mx-auto grid max-w-[1600px] gap-10 px-5 py-20 md:px-10 lg:grid-cols-[0.75fr_1.25fr]">
-              <div>
+          <section
+            id="about"
+            data-active={activeScreen === 'about'}
+            data-state={getPanelState('about')}
+            style={getPanelStyle(1)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-y-auto border-y border-white/10 bg-[#101010] lg:overflow-hidden"
+          >
+            <div className="mx-auto grid min-h-full max-w-[1600px] content-center gap-10 px-5 py-28 md:px-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-24">
+              <div className="flex max-w-2xl flex-col justify-center">
                 <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">PROFILE / 01</p>
-                <h2 className="mt-4 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">檐枫是什么</h2>
-              </div>
-              <div className="space-y-8">
-                <p className="max-w-4xl text-2xl font-black leading-relaxed text-white md:text-4xl">
-                  北京邮电大学檐枫动漫社，是隶属于校团委管理、正式登记在册的 ACG 综合兴趣类社团。
+                <h2 className="mt-4 text-4xl font-black leading-[0.98] tracking-[-0.05em] text-white md:text-6xl xl:text-7xl">
+                  加入檐枫以后，
+                  <span className="block text-[#c8322a]">你可以怎样度过大学生活？</span>
+                </h2>
+                <p className="mt-7 max-w-xl text-base font-bold leading-loose text-white/68 md:text-lg">
+                  先从 QQ 大群认识大家，再去感兴趣的小组试试看。你可以参加官方组的组活，也可以加入自由生长的兴趣组；可以上台、创作、应援、唱歌、组乐队，也可以只是看看群聊、参加几次活动、认识一些朋友。
                 </p>
-                <div className="grid gap-px bg-white/15 md:grid-cols-3">
-                  {[
-                    ['没有门槛', '不需要会画画、会跳舞、很懂动漫。'],
-                    ['自由参加', '不强制活动，也不强制只选一个组。'],
-                    ['不收社费', '加入方式很简单，加 QQ 群即可。']
-                  ].map(([title, text]) => (
-                    <div key={title} className="bg-[#151515] p-6">
-                      <p className="text-xl font-black text-[#c8322a]">{title}</p>
-                      <p className="mt-3 text-sm font-bold leading-relaxed text-white/65">{text}</p>
-                    </div>
+                <div className="mt-8 flex max-w-xl flex-wrap gap-2">
+                  {['零基础 OK', '不收社费', '自由参加', '可以加入多个组', '随时加入'].map((tag) => (
+                    <span key={tag} className="border border-white/16 bg-black/35 px-3 py-2 text-xs font-black tracking-[0.08em] text-white/75">
+                      {tag}
+                    </span>
                   ))}
                 </div>
-                <p className="max-w-3xl text-base font-bold leading-relaxed text-white/65">
-                  只要加入檐枫社群，你就已经是檐枫的一份子。可以参加大型晚会，也可以只参加轻松日常；可以深入一个方向，也可以同时参与多个小组。
-                </p>
+              </div>
+
+              <div className="relative min-h-[560px] overflow-hidden border border-white/12 bg-[linear-gradient(135deg,#17110f_0%,#0c0c0c_42%,#080808_100%)] p-5 shadow-[12px_12px_0_rgb(0_0_0/0.3)] md:p-8 xl:min-h-[600px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(200,50,42,0.2),transparent_32%),linear-gradient(90deg,rgba(255,246,222,0.06),transparent_26%,rgba(255,255,255,0.025))]"></div>
+                <div className="absolute inset-x-0 top-0 h-px bg-white/24"></div>
+                <div className="absolute bottom-0 left-0 h-28 w-full bg-[linear-gradient(0deg,rgba(200,50,42,0.12),transparent)]"></div>
+                <div className="absolute -right-20 -top-20 h-60 w-60 rotate-12 border-[34px] border-[#c8322a]/14"></div>
+                <div className="absolute bottom-7 left-7 h-28 w-20 rotate-[-10deg] border border-white/8 bg-white/[0.025]"></div>
+                <div className="relative z-10 flex min-h-[500px] flex-col justify-center gap-5">
+                  <div className="flex flex-col gap-5 border-b border-white/12 pb-5 md:flex-row md:items-end md:justify-between">
+                    <div>
+                      <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">START GUIDE</p>
+                      <h3 className="mt-3 max-w-xl text-4xl font-black leading-none tracking-[-0.05em] text-white md:text-5xl">
+                        从群聊开始，
+                        <span className="block text-white/70">慢慢找到自己的位置。</span>
+                      </h3>
+                    </div>
+                    <div className="w-fit border-2 border-[#c8322a] px-4 py-2 text-sm font-black tracking-[0.28em] text-[#c8322a] md:rotate-3">
+                      檐枫入门
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4">
+                    {[
+                      {
+                        no: '01',
+                        title: 'QQ 大群',
+                        subtitle: '檐枫的日常入口',
+                        body: '聊天、通知、活动消息、同好交流都从这里开始。加群以后，你就已经是檐枫的一份子。'
+                      },
+                      {
+                        no: '02',
+                        title: '九大官方组',
+                        subtitle: '稳定组活与大型晚会的主力',
+                        body: '事务组 / 宅舞组 / 创作组 / 翻唱组 / 舞台剧组 / Delta组 / Wota艺组 / 轻音组 / VOCALOID组'
+                      },
+                      {
+                        no: '03',
+                        title: '众多兴趣组',
+                        subtitle: '自由生长的同好空间',
+                        body: '番剧鉴赏 / 明日方舟 / 东方 / 术力口 / Cos / 配音 / 摄影剪辑 / 文艺部 / 更多……'
+                      }
+                    ].map((item, index) => (
+                      <article
+                        key={item.no}
+                        className={`relative overflow-hidden border border-white/10 bg-[#151515]/90 p-5 md:p-6 ${
+                          index === 1 ? 'md:ml-10' : index === 2 ? 'md:ml-20' : ''
+                        }`}
+                      >
+                        <div className="absolute bottom-0 right-0 text-8xl font-black leading-none text-white/[0.035]">{item.no}</div>
+                        <div className="relative z-10 grid gap-4 md:grid-cols-[120px_1fr] md:items-start">
+                          <div>
+                            <span className={`inline-flex h-10 w-10 items-center justify-center text-sm font-black ${index === 0 ? 'bg-[#c8322a] text-white' : 'bg-white text-[#c8322a]'}`}>
+                              {item.no}
+                            </span>
+                            <p className="mt-3 text-xs font-black tracking-[0.22em] text-[#c8322a]">{item.title}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-2xl font-black tracking-[-0.03em] text-white md:text-3xl">{item.subtitle}</h4>
+                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/65">{item.body}</p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          <section id="groups" className="bg-[#080808] px-5 py-20 md:px-10">
-            <div className="mx-auto max-w-[1600px]">
-              <div className="mb-10 flex flex-col gap-4 border-b border-white/15 pb-8 lg:flex-row lg:items-end lg:justify-between">
+          <section
+            id="groups"
+            data-active={activeScreen === 'groups'}
+            data-state={getPanelState('groups')}
+            style={getPanelStyle(2)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 md:px-10"
+          >
+            <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
+              <div className="mb-7 flex flex-col gap-4 border-b border-white/15 pb-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
-                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">九个官方组</h2>
+                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">九大官方组</h2>
                 </div>
                 <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
                   选择一个方向开始，也可以同时参与多个方向。这里不是报名表，是檐枫的入口地图。
@@ -410,7 +634,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-                <div className="grid max-h-[680px] gap-2 overflow-y-auto pr-1">
+                <div className="grid gap-1 pr-1">
                   {OFFICIAL_GROUPS.map((group, index) => {
                     const Icon = group.icon;
                     const active = index === selectedGroup;
@@ -419,7 +643,7 @@ const App: React.FC = () => {
                         key={group.title}
                         type="button"
                         onClick={() => setSelectedGroup(index)}
-                        className={`flex items-center justify-between border px-4 py-4 text-left transition ${
+                        className={`flex items-center justify-between border px-4 py-3 text-left transition ${
                           active ? 'border-[#c8322a] bg-[#c8322a] text-white' : 'border-white/10 bg-[#121212] text-white/65 hover:border-white/35 hover:text-white'
                         }`}
                       >
@@ -480,9 +704,15 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section id="activities" className="bg-[#101010] px-5 py-20 md:px-10">
-            <div className="mx-auto max-w-[1600px]">
-              <div className="mb-10 grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
+          <section
+            id="activities"
+            data-active={activeScreen === 'activities'}
+            data-state={getPanelState('activities')}
+            style={getPanelStyle(3)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
+          >
+            <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
+              <div className="mb-8 grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
                 <div>
                   <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">EVENTS / 03</p>
                   <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">活动信号</h2>
@@ -496,7 +726,7 @@ const App: React.FC = () => {
                 {ACTIVITIES.map((activity, index) => {
                   const Icon = activity.icon;
                   return (
-                    <article key={activity.title} className={`${index === 1 ? 'bg-[#c8322a] text-white' : 'bg-[#151515] text-white'} min-h-[360px] p-6`}>
+                    <article key={activity.title} className={`${index === 1 ? 'bg-[#c8322a] text-white' : 'bg-[#151515] text-white'} min-h-[310px] p-5 xl:p-6`}>
                       <div className="flex items-start justify-between">
                         <Icon className="h-9 w-9" />
                         <span className="font-mono text-xs font-black opacity-60">0{index + 1}</span>
@@ -518,51 +748,33 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section id="media" className="bg-[#080808] px-5 py-20 md:px-10">
-            <div className="mx-auto grid max-w-[1600px] gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="border border-white/10 bg-[#121212] p-8 md:p-10">
-                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">MEDIA / 04</p>
-                <h2 className="mt-4 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">活动录像</h2>
-                <p className="mt-6 text-base font-bold leading-relaxed text-white/65">
-                  宅舞、Wota 艺、社庆、冬日庆典、GMA、轻音 live 等 Bilibili 视频先保留轻量展示，后续再补年份分类和管理入口。
-                </p>
-                <button
-                  type="button"
-                  onClick={showVideos}
-                  className="mt-8 flex items-center gap-3 bg-[#c8322a] px-6 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1"
-                >
-                  打开录像库
-                  <Video className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-px bg-white/15">
-                {latestNews.length > 0 ? (
-                  latestNews.map((item) => (
-                    <a key={item.id} href={item.link || '#'} target="_blank" rel="noopener noreferrer" className="grid gap-4 bg-[#121212] p-5 transition hover:bg-[#191919] md:grid-cols-[160px_1fr]">
-                      <img src={item.coverUrl || '/default_cover.png'} alt={item.title} className="h-28 w-full object-cover" />
-                      <div>
-                        <p className="text-xs font-black tracking-[0.24em] text-[#c8322a]">{item.date}</p>
-                        <h3 className="mt-2 text-xl font-black leading-snug text-white">{item.title}</h3>
-                        <p className="mt-2 line-clamp-2 text-sm font-bold leading-relaxed text-white/55">{item.summary}</p>
-                      </div>
-                    </a>
-                  ))
-                ) : (
-                  <div className="bg-[#121212] p-8 text-white/60">公众号内容加载中。</div>
-                )}
-              </div>
+          <section
+            id="media"
+            data-active={activeScreen === 'media'}
+            data-state={getPanelState('media')}
+            data-panel-scroll="true"
+            style={getPanelStyle(4)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-y-auto bg-[#080808] px-5 py-28 md:px-10"
+          >
+            <div className="mx-auto max-w-[1500px] pb-10">
+              <MediaHub articles={wechatNews} />
             </div>
           </section>
 
-          <section id="join" className="relative overflow-hidden bg-[#c8322a] px-5 py-20 text-white md:px-10">
+          <section
+            id="join"
+            data-active={activeScreen === 'join'}
+            data-state={getPanelState('join')}
+            style={getPanelStyle(5)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#c8322a] px-5 py-24 text-white md:px-10"
+          >
             <div className="absolute inset-0 opacity-10 checker-bg"></div>
-            <div className="relative mx-auto grid max-w-[1600px] gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+            <div className="relative mx-auto grid h-full max-w-[1600px] content-center gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
               <div>
                 <p className="text-xs font-black tracking-[0.45em] text-white/70">JOIN / 05</p>
                 <h2 className="mt-4 text-6xl font-black tracking-[-0.06em] md:text-8xl">加入檐枫</h2>
                 <p className="mt-6 max-w-2xl text-xl font-black leading-relaxed">
-                  加 QQ 群即可。没有社费，不限制加入时间，不强制参加活动，也不用担心自己不够会。
+                  加 QQ 群即可。没有社费，不限制加入时间，不强制参加活动，也不用担心没有基础。
                 </p>
               </div>
               <div className="grid gap-px bg-white/40 md:grid-cols-3">
@@ -580,23 +792,9 @@ const App: React.FC = () => {
               </div>
             </div>
           </section>
-        </main>
-      ) : (
-        <main className="mx-auto max-w-[1500px] px-5 pb-20 pt-28 md:px-10">
-          <div className="mb-8 flex flex-col gap-4 border-b border-white/15 pb-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">VIDEOS</p>
-              <h1 className="mt-2 text-5xl font-black text-white">活动录像</h1>
-            </div>
-            <button type="button" onClick={() => showHomeSection('home')} className="border border-white/20 px-5 py-3 text-sm font-black text-white hover:border-[#c8322a] hover:bg-[#c8322a]">
-              回到首页
-            </button>
-          </div>
-          <EventGallery currentTheme={AppTheme.DEFAULT} />
-        </main>
-      )}
 
-      <ChatAssistant />
+        </div>
+      </main>
     </div>
   );
 };
