@@ -56,6 +56,7 @@ interface ActivityItem {
 }
 
 const HERO_IMAGE = '/image/yanfeng-hero.jpg';
+const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.png';
 
 const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React.ElementType }[] = [
   { label: '首页', labelEn: 'INDEX', target: 'home', icon: Home },
@@ -118,13 +119,13 @@ const ScrollGuide: React.FC<{ currentIndex: number; total: number }> = ({ curren
 
 const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
-    title: '事务组',
-    label: 'SUPPORT',
-    qq: '1054869730',
-    description: '协助举办社团内各类大小活动，是冬日庆典、社庆、百团等活动顺利进行的重要后勤力量。',
-    newcomerNote: '适合愿意做组织、协调、设备调试、后勤支持和现场执行的同学。',
-    activities: ['设备调试', '后勤支持', '活动协助', '大型活动保障'],
-    icon: Megaphone
+    title: '番剧鉴赏组',
+    label: 'ANIME',
+    qq: '924171013',
+    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。',
+    newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
+    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐'],
+    icon: Video
   },
   {
     title: '宅舞组',
@@ -199,13 +200,13 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     icon: Wand2
   },
   {
-    title: '番剧鉴赏组',
-    label: 'ANIME',
-    qq: '924171013',
-    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。',
-    newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
-    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐'],
-    icon: Video
+    title: '事务组',
+    label: 'SUPPORT',
+    qq: '1054869730',
+    description: '协助举办社团内各类大小活动，是冬日庆典、社庆、百团等活动顺利进行的重要后勤力量。',
+    newcomerNote: '适合愿意做组织、协调、设备调试、后勤支持和现场执行的同学。',
+    activities: ['设备调试', '后勤支持', '活动协助', '大型活动保障'],
+    icon: Megaphone
   }
 ];
 
@@ -532,6 +533,14 @@ const App: React.FC = () => {
     };
   };
 
+  const getSecondaryPanelStyle = (index: number): React.CSSProperties => ({
+    ...getPanelStyle(index),
+    backgroundImage: `linear-gradient(180deg, rgb(8 8 8 / 0.22), rgb(8 8 8 / 0.72)), url(${SECONDARY_BG_IMAGE})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  });
+
   const getPanelState = (screen: AnchorId) => {
     if (activeScreen === screen) return 'active';
     if (outgoingScreen === screen) return 'outgoing';
@@ -563,8 +572,13 @@ const App: React.FC = () => {
 
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/72 backdrop-blur-md">
         <div className="flex h-[76px] items-stretch justify-between px-4 md:h-[92px] md:px-8 xl:px-12">
-          <div className="flex w-[190px] shrink-0 items-center gap-4 text-left md:w-[250px] xl:w-[300px]">
-            <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000] md:h-16 md:w-16">
+          <div className="flex w-[220px] shrink-0 items-center text-left md:w-[320px] xl:w-[380px]">
+            <img
+              src="/image/yanfeng-logo-wordmark.png"
+              alt="檐枫动漫社"
+              className="h-12 w-auto max-w-full object-contain md:h-14 xl:h-16"
+            />
+            <span className="hidden h-14 w-14 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000] md:h-16 md:w-16">
               <span
                 className="h-10 w-10 bg-white md:h-12 md:w-12"
                 style={{
@@ -579,7 +593,7 @@ const App: React.FC = () => {
                 }}
               />
             </span>
-            <span>
+            <span className="hidden">
               <span className="block text-2xl font-black leading-none tracking-[0.18em] text-white md:text-3xl">檐枫</span>
               <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.28em] text-white/50 md:text-xs">YANFENG ACGN</span>
             </span>
@@ -759,37 +773,37 @@ const App: React.FC = () => {
             id="about"
             data-active={activeScreen === 'about'}
             data-state={getPanelState('about')}
-            style={getPanelStyle(1)}
+            style={getSecondaryPanelStyle(1)}
             className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[#070707]"></div>
+            <div className="pointer-events-none absolute inset-0 bg-black/48"></div>
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.04)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
             <div className="pointer-events-none absolute left-0 top-24 h-px w-full bg-white/10"></div>
             <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
             <div className="pointer-events-none absolute left-[7%] top-0 h-full w-px bg-white/10"></div>
             <div className="pointer-events-none absolute right-[11%] top-0 h-full w-px bg-[#c8322a]/18"></div>
-            <div className="pointer-events-none absolute bottom-[calc(13%+0.75rem)] left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[11rem]">
+            <div className="pointer-events-none absolute bottom-[calc(13%+0.75rem)] left-8 text-[6rem] font-black leading-none tracking-[-0.08em] text-white/[0.025] md:text-[9rem]">
               INFORMATION
             </div>
             <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
 
-            <div className="relative mx-auto grid h-full max-w-[1600px] gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-center">
-              <div className="max-w-2xl">
+            <div className="relative mx-auto grid h-full max-w-[1600px] gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-center xl:gap-10">
+              <div className="relative z-20 flex min-h-0 flex-col justify-center">
                 <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">INFORMATION / 01</p>
-                <h2 className="mt-4 text-5xl font-black leading-[0.94] tracking-[-0.05em] text-white md:text-7xl xl:text-8xl">
-                  檐枫
-                  <span className="block text-[#c8322a]">社群结构</span>
+                <h2 className="mt-4 text-[4.15rem] font-black leading-[0.92] tracking-[-0.04em] text-white md:text-[6rem] xl:text-[8rem]">
+                  社团结构
+                  <span className="block text-[#c8322a]">入社指南</span>
                 </h2>
-                <p className="mt-6 max-w-xl text-base font-bold leading-loose text-white/68 md:text-lg">
-                  檐枫不是只靠一个部门运转的社团。QQ 大群负责日常入口，官方组承接稳定组活与大型晚会，兴趣组则让同好自由聚在一起。
+                <p className="mt-6 max-w-xl text-base font-black leading-loose text-white/72 md:text-lg">
+                  入群即入社，按兴趣自由加入官方组或兴趣组。看番、宅舞、创作、唱歌、乐队、舞台剧和 cos，都能在这里找到同伴。
                 </p>
-                <div className="mt-8 grid max-w-xl grid-cols-3 gap-px bg-white/18">
+                <div className="mt-8 grid max-w-xl grid-cols-3 gap-px bg-white/16">
                   {[
-                    ['ENTRY', 'QQ 大群'],
-                    ['OFFICIAL', '十大官方组'],
-                    ['FREE', '兴趣组']
+                    ['ENTRY', 'QQ 群入口'],
+                    ['GROUPS', '官方组 / 兴趣组'],
+                    ['STYLE', '自由参加']
                   ].map(([label, value]) => (
-                    <div key={label} className="bg-[#111] px-4 py-4">
+                    <div key={label} className="bg-[#111] px-4 py-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.02)]">
                       <p className="text-[10px] font-black tracking-[0.22em] text-[#c8322a]">{label}</p>
                       <p className="mt-2 text-sm font-black text-white md:text-base">{value}</p>
                     </div>
@@ -797,87 +811,109 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative min-h-[520px] overflow-hidden border border-white/12 bg-[#0c0c0c] shadow-[10px_10px_0_rgb(0_0_0/0.28)] md:min-h-[560px]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:96px_96px]"></div>
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-[#c8322a]"></div>
-                <div className="pointer-events-none absolute right-6 top-6 h-16 w-16 border-r-2 border-t-2 border-[#c8322a]/45"></div>
-                <div className="pointer-events-none absolute -right-16 top-8 text-[11rem] font-black leading-none tracking-[-0.08em] text-white/[0.03] md:text-[16rem]">
-                  YF
-                </div>
-                <div className="relative z-10 grid h-full grid-rows-[auto_1fr]">
-                  <div className="flex items-center justify-between border-b border-white/12 px-5 py-4 md:px-7">
-                    <div>
-                      <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">STRUCTURE FILE</p>
-                      <h3 className="mt-1 text-2xl font-black text-white md:text-3xl">从入口到小组</h3>
-                    </div>
-                    <div className="border border-[#c8322a] px-3 py-2 text-xs font-black tracking-[0.22em] text-[#c8322a]">
-                      OPEN
-                    </div>
+              <div className="relative z-10 min-h-[540px] lg:min-h-[600px]">
+                <a
+                  href="https://zh.moegirl.org.cn/%E6%AA%90%E6%9E%AB%E5%A8%98"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="檐枫娘萌娘百科"
+                  className="absolute -left-16 bottom-0 z-30 hidden w-[170px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-left-24 xl:w-[215px]"
+                >
+                  <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="w-full" />
+                </a>
+                <a
+                  href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="檐羽萌娘百科"
+                  className="absolute -right-12 bottom-3 z-30 hidden w-[155px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-right-20 xl:w-[195px]"
+                >
+                  <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="w-full" />
+                </a>
+
+                <div className="relative z-20 flex h-full min-h-[540px] flex-col overflow-hidden border-[10px] border-[#211713] bg-[#0b0b0b] shadow-[14px_14px_0_rgb(0_0_0/0.35)] lg:min-h-[600px]">
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-45 [background-size:auto,84px_84px,84px_84px]"></div>
+                  <div className="pointer-events-none absolute inset-3 border border-white/8"></div>
+                  <div className="pointer-events-none absolute right-8 top-5 text-[6rem] font-black leading-none tracking-[-0.08em] text-white/[0.025] md:text-[8rem]">
+                    BOARD
                   </div>
 
-                  <div className="grid h-full gap-px bg-white/10 md:grid-cols-[0.86fr_1.14fr]">
-                    <article className="flex flex-col justify-between bg-[#111] p-5 md:p-7">
-                      <div>
-                        <span className="inline-flex h-12 w-12 items-center justify-center bg-[#c8322a] text-lg font-black text-white">01</span>
-                        <p className="mt-5 text-xs font-black tracking-[0.3em] text-[#c8322a]">QQ GROUP</p>
-                        <h4 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">QQ 大群</h4>
-                        <p className="mt-5 text-sm font-bold leading-loose text-white/64">
-                          檐枫的日常入口。聊天、通知、活动消息、同好交流都从这里开始。
+                  <div className="relative z-10 flex flex-1 flex-col justify-center px-5 py-7 md:px-10 md:py-10">
+                    <div className="mx-auto w-full max-w-3xl">
+                      <div className="mx-auto max-w-[380px] border border-[#c8322a]/75 bg-[#c8322a] px-6 py-5 text-center shadow-[6px_6px_0_rgb(0_0_0/0.35)]">
+                        <p className="text-[10px] font-black tracking-[0.3em] text-white/70">START / 01</p>
+                        <h4 className="mt-1 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">QQ 大群</h4>
+                        <p className="mt-2 text-xs font-bold text-white/76">水群、交友、了解动漫社，接收活动消息</p>
+                      </div>
+
+                      <div className="relative mx-auto h-20 max-w-[520px]">
+                        <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/24"></div>
+                        <div className="absolute left-[24%] right-[24%] top-[62%] h-px bg-white/24"></div>
+                        <div className="absolute left-[24%] top-[62%] h-[38%] w-px bg-white/24"></div>
+                        <div className="absolute right-[24%] top-[62%] h-[38%] w-px bg-white/24"></div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <article className="relative min-h-[190px] overflow-hidden border border-white/14 bg-[#111]/92 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">OFFICIAL</p>
+                              <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white">十大官方组</h4>
+                              <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">稳定组活、节目排练和大型晚会的主力。</p>
+                            </div>
+                          </div>
+                          <div className="mt-5 flex flex-wrap gap-2">
+                            {OFFICIAL_GROUPS.slice(0, 6).map((group) => (
+                              <span key={group.title} className="border border-white/12 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
+                                {group.title}
+                              </span>
+                            ))}
+                          </div>
+                        </article>
+
+                        <article className="relative min-h-[190px] overflow-hidden border border-white/14 bg-[#111]/92 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">INTEREST</p>
+                              <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white">兴趣组</h4>
+                              <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">自由生长的同好空间。</p>
+                            </div>
+                          </div>
+                          <div className="mt-5 flex flex-wrap gap-2">
+                            {INTEREST_GROUPS.slice(0, 6).map((group) => (
+                              <span key={group} className="border border-white/12 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
+                                {group}
+                              </span>
+                            ))}
+                          </div>
+                        </article>
+                      </div>
+
+                      <div className="mt-5 border-l-4 border-[#c8322a] bg-black/42 px-4 py-3">
+                        <p className="text-sm font-black leading-relaxed text-white/75">
+                          入群即入社，是先坐下来认识大家。想活跃、想上台、想潜水看消息，都可以。
                         </p>
                       </div>
-                      <div className="mt-6 border-l-4 border-[#c8322a] bg-black/35 px-4 py-3">
-                        <p className="text-sm font-black text-white">加入群聊以后，你就已经是檐枫的一份子。</p>
-                      </div>
-                    </article>
+                    </div>
 
-                    <div className="grid gap-px bg-white/10">
-                      <article className="bg-[#151515] p-5 md:p-7">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-xs font-black tracking-[0.3em] text-[#c8322a]">OFFICIAL GROUPS / 02</p>
-                            <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">十大官方组</h4>
-                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/60">稳定组活与大型晚会的主力。</p>
-                          </div>
-                          <ShieldCheck className="h-9 w-9 text-[#c8322a]" strokeWidth={2.4} />
-                        </div>
-                        <div className="mt-5 flex flex-wrap gap-2">
-                          {OFFICIAL_GROUPS.map((group) => (
-                            <span key={group.title} className="border border-white/12 bg-black/30 px-2.5 py-1.5 text-xs font-black text-white/75">
-                              {group.title}
-                            </span>
-                          ))}
-                        </div>
-                      </article>
-
-                      <article className="bg-[#151515] p-5 md:p-7">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-xs font-black tracking-[0.3em] text-[#c8322a]">INTEREST GROUPS / 03</p>
-                            <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white md:text-4xl">众多兴趣组</h4>
-                            <p className="mt-3 text-sm font-bold leading-relaxed text-white/60">自由生长的同好空间，想聊什么就聚成什么方向。</p>
-                          </div>
-                          <Users className="h-9 w-9 text-[#c8322a]" strokeWidth={2.4} />
-                        </div>
-                        <div className="mt-5 flex flex-wrap gap-2">
-                          {INTEREST_GROUPS.map((group) => (
-                            <span key={group} className="border border-white/12 bg-black/30 px-2.5 py-1.5 text-xs font-black text-white/75">
-                              {group}
-                            </span>
-                          ))}
-                        </div>
-                      </article>
+                    <div className="mt-6 flex justify-center gap-2 md:hidden">
+                      <a href="https://zh.moegirl.org.cn/%E6%AA%90%E6%9E%AB%E5%A8%98" target="_blank" rel="noreferrer" aria-label="檐枫娘萌娘百科">
+                        <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="h-24 w-20 object-cover object-top" />
+                      </a>
+                      <a href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD" target="_blank" rel="noreferrer" aria-label="檐羽萌娘百科">
+                        <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="h-24 w-20 object-cover object-top" />
+                      </a>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
-
           <section
             id="groups"
             data-active={activeScreen === 'groups'}
             data-state={getPanelState('groups')}
-            style={getPanelStyle(2)}
+            style={getSecondaryPanelStyle(2)}
             className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 md:px-10"
           >
             <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
@@ -995,42 +1031,75 @@ const App: React.FC = () => {
             id="activities"
             data-active={activeScreen === 'activities'}
             data-state={getPanelState('activities')}
-            style={getPanelStyle(3)}
+            style={getSecondaryPanelStyle(3)}
             className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
           >
-            <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
-              <div className="mb-8 grid gap-6 lg:grid-cols-[0.7fr_1.3fr] lg:items-end">
-                <div>
-                  <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">EVENTS / 03</p>
-                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">活动信号</h2>
-                </div>
-                <p className="text-xl font-black leading-relaxed text-white/75">
-                  檐枫既有每学期的大型晚会，也有放映、组活、练舞、合宿和联合观影这些轻松日常。
-                </p>
+            <div className="pointer-events-none absolute inset-0 bg-black/46"></div>
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.036)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
+            <div className="pointer-events-none absolute left-0 top-24 h-px w-full bg-white/10"></div>
+            <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
+            <div className="pointer-events-none absolute -bottom-8 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.026] md:text-[12rem]">
+              EVENTS
+            </div>
+
+            <div className="relative mx-auto grid h-full max-w-[1600px] grid-rows-[1fr_1fr_1fr_auto] gap-3">
+              <div className="grid min-h-0 grid-cols-[0.48fr_1.52fr] gap-3 lg:grid-cols-[0.42fr_1.58fr]">
+                <article className="relative overflow-hidden border border-white/12 bg-[#111] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/12">01</div>
+                  <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ENTRY POINT</p>
+                  <h2 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">百团大战</h2>
+                  <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
+                    开学季的摊位入口，第一次和檐枫面对面。
+                  </p>
+                </article>
+                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
+                  <img src="/image/activity-baifest.jpg" alt="百团大战活动现场" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.46),transparent_42%,rgba(200,50,42,0.1))]"></div>
+                  <span className="absolute bottom-4 right-4 border border-white/18 bg-black/55 px-3 py-2 text-xs font-black tracking-[0.18em] text-white/75">
+                    迎新 / 摊位 / 交流
+                  </span>
+                </figure>
               </div>
 
-              <div className="grid gap-px bg-white/15 lg:grid-cols-5">
-                {ACTIVITIES.map((activity, index) => {
-                  const Icon = activity.icon;
-                  return (
-                    <article key={activity.title} className={`${index === 1 ? 'bg-[#c8322a] text-white' : 'bg-[#151515] text-white'} min-h-[310px] p-5 xl:p-6`}>
-                      <div className="flex items-start justify-between">
-                        <Icon className="h-9 w-9" />
-                        <span className="font-mono text-xs font-black opacity-60">0{index + 1}</span>
-                      </div>
-                      <p className="mt-8 text-[10px] font-black tracking-[0.28em] opacity-70">{activity.kicker}</p>
-                      <h3 className="mt-3 text-3xl font-black tracking-[-0.03em]">{activity.title}</h3>
-                      <p className="mt-5 text-sm font-bold leading-relaxed opacity-75">{activity.description}</p>
-                      <div className="mt-8 flex flex-wrap gap-2">
-                        {activity.details.map((detail) => (
-                          <span key={detail} className="border border-white/25 px-2 py-1 text-[10px] font-black">
-                            {detail}
-                          </span>
-                        ))}
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="grid min-h-0 grid-cols-[1.28fr_0.72fr] gap-3 lg:grid-cols-[1.26fr_0.74fr]">
+                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
+                  <img src="/image/activity-winter.jpeg" alt="冬日盛典合影" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.2),transparent_50%,rgba(0,0,0,0.55))]"></div>
+                </figure>
+                <article className="relative overflow-hidden border border-[#c8322a]/65 bg-[#c8322a] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/25">02</div>
+                  <p className="text-[10px] font-black tracking-[0.34em] text-white/65">TERM FINALE</p>
+                  <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">冬日盛典</h3>
+                  <p className="mt-4 text-sm font-bold leading-relaxed text-white/78">
+                    第一学期末的大型晚会，节目、舞台和回忆一起落地。
+                  </p>
+                </article>
+              </div>
+
+              <div className="grid min-h-0 grid-cols-[0.48fr_1.52fr] gap-3 lg:grid-cols-[0.42fr_1.58fr]">
+                <article className="relative overflow-hidden border border-white/12 bg-[#111] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/12">03</div>
+                  <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ANNIVERSARY</p>
+                  <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">社庆</h3>
+                  <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
+                    第二学期末的周年庆典，属于檐枫自己的大合照。
+                  </p>
+                </article>
+                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
+                  <img src="/image/activity-anniversary.jpeg" alt="社庆活动合影" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.45),transparent_48%,rgba(200,50,42,0.1))]"></div>
+                </figure>
+              </div>
+
+              <div className="relative overflow-hidden border-y border-white/15 bg-black/45 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                  <span className="text-[10px] font-black tracking-[0.3em] text-[#c8322a]">DAILY EVENTS</span>
+                  {['放映会', '组活', '轻音 Live', '合宿', '联合观影', '更多日常活动'].map((event) => (
+                    <span key={event} className="border border-white/14 bg-[#111] px-3 py-1.5 text-xs font-black text-white/72">
+                      {event}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
@@ -1039,7 +1108,7 @@ const App: React.FC = () => {
             id="media"
             data-active={activeScreen === 'media'}
             data-state={getPanelState('media')}
-            style={getPanelStyle(4)}
+            style={getSecondaryPanelStyle(4)}
             className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
           >
             <div className="h-full w-full">
@@ -1051,10 +1120,10 @@ const App: React.FC = () => {
             id="join"
             data-active={activeScreen === 'join'}
             data-state={getPanelState('join')}
-            style={getPanelStyle(5)}
+            style={getSecondaryPanelStyle(5)}
             className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 text-white md:px-10"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[#070707]"></div>
+            <div className="pointer-events-none absolute inset-0 bg-black/50"></div>
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.038)_1px,transparent_1px)] opacity-34 [background-size:160px_160px]"></div>
             <div className="pointer-events-none absolute left-[22px] top-0 h-full w-px bg-white/12"></div>
             <div className="pointer-events-none absolute bottom-[14%] left-0 h-px w-full bg-white/12"></div>

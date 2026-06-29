@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowRight, Image as ImageIcon, Music2, NotebookPen, Video } from 'lucide-react';
+import React, { useState } from 'react';
+import { Image as ImageIcon, Music2, NotebookPen, Video } from 'lucide-react';
 
 export type MediaContentId = 'videos' | 'vocaloid' | 'gallery' | 'wechat';
 
@@ -50,37 +50,39 @@ export const getMediaEntry = (id: MediaContentId) => MEDIA_ENTRIES.find((entry) 
 
 const MEDIA_HOTSPOTS: {
   id: MediaContentId;
-  marker: string;
   area: string;
-  labelPosition: string;
+  clipPath: string;
+  polygonPoints: string;
 }[] = [
   {
     id: 'gallery',
-    marker: '创作展示',
-    area: 'left-[2%] top-[18%] h-[42%] w-[31%]',
-    labelPosition: 'bottom-5 left-5'
+    area: 'left-[2%] top-[17%] h-[47%] w-[31%]',
+    clipPath: 'polygon(6% 8%, 84% 0%, 98% 82%, 15% 100%, 0% 34%)',
+    polygonPoints: '6,8 84,0 98,82 15,100 0,34'
   },
   {
     id: 'videos',
-    marker: '活动录像',
-    area: 'left-[36%] top-[18%] h-[36%] w-[31%]',
-    labelPosition: 'bottom-5 left-1/2 -translate-x-1/2'
+    area: 'left-[30%] top-[3%] h-[48%] w-[34%]',
+    clipPath: 'polygon(18% 13%, 82% 5%, 98% 29%, 93% 86%, 15% 100%, 0% 68%, 4% 26%)',
+    polygonPoints: '18,13 82,5 98,29 93,86 15,100 0,68 4,26'
   },
   {
     id: 'vocaloid',
-    marker: 'V组专辑',
-    area: 'right-[4%] top-[28%] h-[39%] w-[27%]',
-    labelPosition: 'bottom-5 right-5'
+    area: 'right-[7%] top-[22%] h-[43%] w-[36%]',
+    clipPath: 'polygon(21% 8%, 72% 4%, 100% 28%, 95% 87%, 35% 98%, 0% 75%, 7% 27%)',
+    polygonPoints: '21,8 72,4 100,28 95,87 35,98 0,75 7,27'
   },
   {
     id: 'wechat',
-    marker: '檐枫推文',
-    area: 'left-[31%] bottom-[5%] h-[33%] w-[36%]',
-    labelPosition: 'bottom-5 left-1/2 -translate-x-1/2'
+    area: 'left-[24%] bottom-[4%] h-[42%] w-[45%]',
+    clipPath: 'polygon(7% 23%, 72% 3%, 100% 33%, 86% 90%, 16% 100%, 0% 66%)',
+    polygonPoints: '7,23 72,3 100,33 86,90 16,100 0,66'
   }
 ];
 
 const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
+  const [activeHotspot, setActiveHotspot] = useState<MediaContentId | null>(null);
+
   return (
     <div className="relative h-full min-h-[calc(100dvh-9rem)] overflow-hidden animate-in fade-in zoom-in duration-500">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
@@ -138,28 +140,34 @@ const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
             if (!entry) {
               return null;
             }
-            const Icon = entry.icon;
+            const isActive = activeHotspot === spot.id;
 
             return (
-              <button
-                key={spot.id}
+              <div key={spot.id} className={`absolute z-20 ${spot.area}`}>
+                <button
                 type="button"
                 onClick={() => onOpenEntry(spot.id)}
                 aria-label={`打开${entry.title}`}
-                className={`group absolute z-20 ${spot.area} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c8322a] focus-visible:ring-offset-2 focus-visible:ring-offset-black`}
-              >
-                <span className="absolute inset-0 border border-white/0 bg-[#c8322a]/0 transition duration-300 group-hover:border-[#c8322a]/80 group-hover:bg-[#c8322a]/10 group-focus-visible:border-[#c8322a] group-focus-visible:bg-[#c8322a]/12"></span>
-                <span
-                  className={`absolute ${spot.labelPosition} flex items-center gap-2 border border-white/18 bg-black/72 px-3 py-2 text-left text-white opacity-0 shadow-[4px_4px_0_rgb(0_0_0/0.35)] backdrop-blur-sm transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100`}
+                onMouseEnter={() => setActiveHotspot(spot.id)}
+                onMouseLeave={() => setActiveHotspot((current) => (current === spot.id ? null : current))}
+                onFocus={() => setActiveHotspot(spot.id)}
+                onBlur={() => setActiveHotspot((current) => (current === spot.id ? null : current))}
+                className="absolute inset-0 cursor-pointer bg-transparent focus:outline-none"
+                style={{
+                  clipPath: spot.clipPath,
+                  WebkitClipPath: spot.clipPath
+                }}
+                />
+                <svg
+                  className={`pointer-events-none absolute inset-0 transition duration-300 ${isActive ? 'opacity-100 drop-shadow-[0_0_18px_rgba(200,50,42,0.85)]' : 'opacity-0'}`}
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-[#c8322a]" strokeWidth={2.7} />
-                  <span>
-                    <span className="block whitespace-nowrap text-[10px] font-black tracking-[0.22em] text-[#c8322a]">{entry.label}</span>
-                    <span className="mt-0.5 block whitespace-nowrap text-sm font-black">{spot.marker}</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5" />
-                </span>
-              </button>
+                  <polygon points={spot.polygonPoints} fill="rgba(200,50,42,0.18)" stroke="rgba(200,50,42,0.94)" strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
+                  <polygon points={spot.polygonPoints} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" vectorEffect="non-scaling-stroke" />
+                </svg>
+              </div>
             );
           })}
 
