@@ -102,7 +102,7 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     title: '翻唱组',
     label: 'VOCAL',
     qq: '745254525',
-    description: '面向所有热爱 ACG 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
+    description: '面向所有热爱 ACGN 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
     newcomerNote: '觉得自己水平还不够也没关系，唱得开心才是最重要的目标。',
     activities: ['新生歌会', 'KTV 聚会', '翻唱交流', '晚会节目'],
     icon: Mic2
@@ -138,9 +138,9 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     title: '轻音组',
     label: 'BAND',
     qq: '914316313',
-    description: '面向乐器、乐队和 ACG 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。',
+    description: '面向乐器、乐队和 ACGN 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。',
     newcomerNote: '乐器高手、练习新手，甚至只是想点歌听的纯路人都欢迎。',
-    activities: ['琴技交流', '乐队组建', '专场 Live', 'ACG 音乐讨论'],
+    activities: ['琴技交流', '乐队组建', '专场 Live', 'ACGN 音乐讨论'],
     icon: Radio
   },
   {
@@ -214,6 +214,10 @@ const App: React.FC = () => {
   const activeScreenRef = useRef<AnchorId>('home');
   const activeMediaEntryRef = useRef<MediaContentId | null>(null);
   const mediaPageRef = useRef<HTMLElement | null>(null);
+  const radioAudioRef = useRef<HTMLAudioElement | null>(null);
+  const radioAutoPlayCleanupRef = useRef<(() => void) | null>(null);
+  const radioHasStartedRef = useRef(false);
+  const radioPlayAttemptRef = useRef(false);
   const outgoingTimerRef = useRef<number | null>(null);
   const transitionLockRef = useRef(false);
   const wheelLockRef = useRef(false);
@@ -238,6 +242,59 @@ const App: React.FC = () => {
     return () => {
       if (outgoingTimerRef.current) window.clearTimeout(outgoingTimerRef.current);
     };
+  }, []);
+
+  const removeRadioAutoPlayListeners = () => {
+    if (!radioAutoPlayCleanupRef.current) return;
+    radioAutoPlayCleanupRef.current();
+    radioAutoPlayCleanupRef.current = null;
+  };
+
+  const playRadio = async () => {
+    const audio = radioAudioRef.current;
+    if (!audio || radioPlayAttemptRef.current) return false;
+
+    radioPlayAttemptRef.current = true;
+    audio.volume = 0.35;
+    audio.loop = true;
+
+    try {
+      await audio.play();
+      radioHasStartedRef.current = true;
+      removeRadioAutoPlayListeners();
+      return true;
+    } catch (error) {
+      console.warn('YANFENG RADIO playback was blocked:', error);
+      return false;
+    } finally {
+      radioPlayAttemptRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    const audio = radioAudioRef.current;
+    if (!audio) return;
+
+    audio.volume = 0.35;
+    audio.loop = true;
+
+    const handleFirstClick = () => {
+      if (radioHasStartedRef.current) {
+        removeRadioAutoPlayListeners();
+        return;
+      }
+      void playRadio();
+    };
+    const clickAutoPlayOptions: AddEventListenerOptions = { capture: true };
+
+    const cleanup = () => {
+      window.removeEventListener('click', handleFirstClick, clickAutoPlayOptions);
+    };
+
+    radioAutoPlayCleanupRef.current = cleanup;
+    window.addEventListener('click', handleFirstClick, clickAutoPlayOptions);
+
+    return cleanup;
   }, []);
 
   useEffect(() => {
@@ -600,13 +657,13 @@ const App: React.FC = () => {
 
             <div className="relative z-10 mx-auto grid h-full max-w-[1600px] content-center px-5 py-8 md:px-10 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="max-w-3xl">
-                <p className="text-sm font-black tracking-[0.45em] text-[#c8322a] md:text-base">北京邮电大学 ACG 爱好者的聚集地</p>
+                <p className="text-sm font-black tracking-[0.45em] text-[#c8322a] md:text-base">北京邮电大学 ACGN 爱好者的聚集地</p>
                 <h1 className="mt-4 text-[4.5rem] font-black leading-[0.86] tracking-[-0.06em] text-white md:text-[7rem] xl:text-[9rem]">
                   檐枫
                   <span className="block text-[#c8322a]">动漫社</span>
                 </h1>
                 <p className="mt-7 max-w-xl text-xl font-black leading-relaxed text-white md:text-2xl">
-                  看番、宅舞、wota艺、创作、唱歌、乐队，舞台剧，cosplay，术力口，包罗万象的超级acg社团。
+                  看番、宅舞、wota艺、创作、唱歌、乐队，舞台剧，cosplay，术力口，包罗万象的二次元社团。
                 </p>
 
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -1056,6 +1113,12 @@ const App: React.FC = () => {
         </div>
       </main>
       )}
+      <audio
+        ref={radioAudioRef}
+        src="/music/bgm.mp3"
+        preload="auto"
+        loop
+      />
     </div>
   );
 };
