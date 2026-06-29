@@ -69,6 +69,52 @@ const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React
 const SCREEN_IDS: AnchorId[] = ['home', 'about', 'groups', 'activities', 'media', 'join'];
 const PAGE_TRANSITION_MS = 1180;
 const PAGE_TRANSITION_EASE = 'cubic-bezier(0.68, 0.02, 0.88, 0.58)';
+const SCROLL_GUIDE_DOTS = Array.from({ length: 28 }, (_, index) => index);
+
+const formatGuideNumber = (value: number) => String(value).padStart(2, '0');
+
+const ScrollGuide: React.FC<{ currentIndex: number; total: number }> = ({ currentIndex, total }) => {
+  return (
+    <div className="pointer-events-none absolute bottom-4 left-0 z-40 w-[300px] sm:w-[330px] md:bottom-5 md:w-[430px]">
+      <style>{`
+        @keyframes scrollGuideArrowLeft {
+          0% { transform: translateX(70px); opacity: 0; }
+          18% { opacity: 1; }
+          76% { opacity: 1; }
+          100% { transform: translateX(0); opacity: 0; }
+        }
+
+        .scroll-guide-arrow {
+          animation: scrollGuideArrowLeft 1.45s cubic-bezier(0.45, 0, 0.22, 1) infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-guide-arrow {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div className="relative h-[58px] pl-1 text-white/60 md:h-[64px]">
+        <div className="absolute left-0 top-[15px] flex w-[220px] items-center justify-between sm:w-[260px] md:w-[350px]">
+          {SCROLL_GUIDE_DOTS.map((dot) => (
+            <span key={dot} className="h-1 w-1 rounded-full bg-white/48" />
+          ))}
+        </div>
+
+        <span className="scroll-guide-arrow absolute left-[100px] top-[3px] sm:left-[116px] md:left-[150px]" aria-hidden="true">
+          <span className="block h-0 w-0 border-y-[9px] border-r-[20px] border-y-transparent border-r-[#c8322a] md:border-y-[11px] md:border-r-[24px]" />
+        </span>
+
+        <span className="absolute left-[64px] top-9 font-mono text-base font-black tracking-[0.2em] text-white/72 sm:left-[78px] md:left-[96px] md:top-10 md:text-xl">
+          {formatGuideNumber(currentIndex + 1)}/{formatGuideNumber(total)}
+        </span>
+
+        <span className="absolute left-[245px] top-[5px] text-sm font-black tracking-[0.06em] text-white/75 sm:left-[285px] md:left-[382px] md:text-base">SCROLL</span>
+      </div>
+    </div>
+  );
+};
 
 const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
@@ -722,7 +768,7 @@ const App: React.FC = () => {
             <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
             <div className="pointer-events-none absolute left-[7%] top-0 h-full w-px bg-white/10"></div>
             <div className="pointer-events-none absolute right-[11%] top-0 h-full w-px bg-[#c8322a]/18"></div>
-            <div className="pointer-events-none absolute -bottom-10 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[11rem]">
+            <div className="pointer-events-none absolute bottom-[calc(13%+0.75rem)] left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[11rem]">
               INFORMATION
             </div>
             <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
@@ -1010,7 +1056,6 @@ const App: React.FC = () => {
           >
             <div className="pointer-events-none absolute inset-0 bg-[#070707]"></div>
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.038)_1px,transparent_1px)] opacity-34 [background-size:160px_160px]"></div>
-            <div className="pointer-events-none absolute left-0 top-0 h-full w-[16px] bg-[#c8322a] md:w-[22px]"></div>
             <div className="pointer-events-none absolute left-[22px] top-0 h-full w-px bg-white/12"></div>
             <div className="pointer-events-none absolute bottom-[14%] left-0 h-px w-full bg-white/12"></div>
             <div className="pointer-events-none absolute right-[12%] top-0 h-full w-px bg-white/10"></div>
@@ -1110,6 +1155,7 @@ const App: React.FC = () => {
             </div>
           </section>
 
+          <ScrollGuide currentIndex={activeScreenIndex} total={SCREEN_IDS.length} />
         </div>
       </main>
       )}
