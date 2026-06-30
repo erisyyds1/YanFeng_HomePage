@@ -47,7 +47,7 @@ const InfoPage: React.FC = () => {
             aria-label="檐枫娘萌娘百科"
             className="absolute -left-16 bottom-0 z-30 hidden w-[170px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-left-24 xl:w-[215px]"
           >
-            <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="w-full" />
+            <img src="/image/yanfeng-chibi.webp" alt="Q版檐枫娘" className="w-full" />
           </a>
           <a
             href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD"
@@ -56,7 +56,7 @@ const InfoPage: React.FC = () => {
             aria-label="檐羽萌娘百科"
             className="absolute -right-12 bottom-3 z-30 hidden w-[155px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-right-20 xl:w-[195px]"
           >
-            <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="w-full" />
+            <img src="/image/yanyu-chibi.webp" alt="Q版檐羽" className="w-full" />
           </a>
 
           <div
@@ -120,10 +120,10 @@ const InfoPage: React.FC = () => {
 
               <div className="mt-6 flex justify-center gap-2 md:hidden">
                 <a href="https://zh.moegirl.org.cn/%E6%AA%90%E6%9E%AB%E5%A8%98" target="_blank" rel="noreferrer" aria-label="檐枫娘萌娘百科">
-                  <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="h-24 w-20 object-cover object-top" />
+                  <img src="/image/yanfeng-chibi.webp" alt="Q版檐枫娘" className="h-24 w-20 object-cover object-top" />
                 </a>
                 <a href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD" target="_blank" rel="noreferrer" aria-label="檐羽萌娘百科">
-                  <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="h-24 w-20 object-cover object-top" />
+                  <img src="/image/yanyu-chibi.webp" alt="Q版檐羽" className="h-24 w-20 object-cover object-top" />
                 </a>
               </div>
             </div>

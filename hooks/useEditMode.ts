@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { clearAdminSession, requestAdminSession } from '../services/adminAuth';
 
 const ADMIN_PASSWORD = '18522';
 const EDIT_MODE_STORAGE_KEY = 'yanfeng-edit-mode';
@@ -22,17 +23,21 @@ export const useEditMode = () => {
     setAdminAccessValue('');
   };
 
-  const submitAdminAccess = (event: FormEvent<HTMLFormElement>) => {
+  const submitAdminAccess = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const message = adminAccessValue.trim();
+    closeAdminAccess();
 
-    if (adminAccessValue.trim() === ADMIN_PASSWORD) {
+    const result = await requestAdminSession(message);
+    const devFallbackAccepted = result === 'unavailable' && import.meta.env.DEV && message === ADMIN_PASSWORD;
+
+    if (result === 'accepted' || devFallbackAccepted) {
       setIsEditMode(true);
     }
-
-    closeAdminAccess();
   };
 
   const exitEditMode = () => {
+    clearAdminSession();
     setIsEditMode(false);
   };
 

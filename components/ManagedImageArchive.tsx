@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit3, Image as ImageIcon, ImagePlus, Link as LinkIcon, Trash2, X } from 'lucide-react';
+import { Edit3, Image as ImageIcon, ImagePlus, Trash2, UploadCloud, X } from 'lucide-react';
 import type { ManagedImageCategory } from '../types';
 import type { MediaEntry } from './MediaHub';
 import type { ManagedImagesController } from '../hooks/useManagedImages';
@@ -17,6 +17,13 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
   const images = imageManager.managedImages.filter((image) => image.category === category);
   const emptyText = category === 'album' ? '暂时还没有专辑图片' : '暂时还没有画集图片';
   const imageFormActive = imageManager.imageFormCategory === category;
+  const previewUrl = imageManager.imageUploadPreviewUrl || imageManager.imageFormUrl;
+  const fileInputId = `managed-image-upload-${category}`;
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    imageManager.selectManagedImageFile(event.dataTransfer.files[0] || null);
+  };
 
   return (
     <div className="min-h-[520px] border border-white/12 bg-black/38 p-5 shadow-[12px_12px_0_rgb(0_0_0/0.22)]">
@@ -62,44 +69,67 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
                   : '添加画集图片'}
             </h3>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-[var(--theme-border)]">图片标题</label>
-                <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
-                  <Edit3 size={18} className="mr-2 text-gray-400" />
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-[var(--theme-border)]">图片标题</label>
+                  <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
+                    <Edit3 size={18} className="mr-2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={imageManager.imageFormTitle}
+                      onChange={(event) => imageManager.setImageFormTitle(event.target.value)}
+                      placeholder={category === 'album' ? '输入专辑图片标题...' : '输入画集图片标题...'}
+                      className="w-full bg-transparent text-black outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="block text-sm font-bold text-[var(--theme-border)]">上传图片</span>
                   <input
-                    type="text"
-                    value={imageManager.imageFormTitle}
-                    onChange={(event) => imageManager.setImageFormTitle(event.target.value)}
-                    placeholder={category === 'album' ? '输入专辑图片标题...' : '输入画集图片标题...'}
-                    className="w-full bg-transparent text-black outline-none"
+                    id={fileInputId}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(event) => imageManager.selectManagedImageFile(event.target.files?.[0] || null)}
                   />
+                  <label
+                    htmlFor={fileInputId}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={handleDrop}
+                    className="flex min-h-[150px] cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-[var(--theme-border)] bg-white/80 p-5 text-center transition hover:bg-white"
+                  >
+                    <UploadCloud className="h-9 w-9 text-[var(--theme-primary)]" />
+                    <span className="mt-3 text-base font-black text-[var(--theme-border)]">
+                      拖入图片，或点击选择文件
+                    </span>
+                    <span className="mt-2 text-xs font-bold text-gray-500">JPG / PNG / WebP，最大 8 MB</span>
+                    {imageManager.imageUploadFile && (
+                      <span className="mt-3 max-w-full truncate rounded bg-black px-3 py-1 text-xs font-black text-white">
+                        {imageManager.imageUploadFile.name}
+                      </span>
+                    )}
+                  </label>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-[var(--theme-border)]">图片地址</label>
-                <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
-                  <LinkIcon size={18} className="mr-2 text-gray-400" />
-                  <input
-                    type="text"
-                    value={imageManager.imageFormUrl}
-                    onChange={(event) => imageManager.setImageFormUrl(event.target.value)}
-                    placeholder="/image/example.png 或 https://example.com/image.jpg"
-                    className="w-full bg-transparent text-black outline-none"
-                    required
-                  />
+                <p className="text-sm font-bold text-[var(--theme-border)]">预览</p>
+                <div className="grid min-h-[220px] place-items-center overflow-hidden rounded border-2 border-[var(--theme-border)] bg-black">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="图片预览" className="h-full max-h-[260px] w-full object-contain" />
+                  ) : (
+                    <div className="px-4 text-center text-sm font-bold text-white/45">
+                      选择图片后这里会显示预览
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500">提示：可以填写 public 里的路径，例如 /image/xxx.png。</p>
+                {imageManager.editingImageId && !imageManager.imageUploadFile && (
+                  <p className="text-xs text-gray-500">不重新选择文件时，会保留当前图片。</p>
+                )}
               </div>
             </div>
-
-            {imageManager.imageFormUrl && (
-              <div className="text-xs text-gray-500">
-                <p className="mb-1 font-bold">预览：</p>
-                <img src={imageManager.imageFormUrl} alt="图片预览" className="h-28 rounded border border-gray-200 bg-black object-cover" />
-              </div>
-            )}
 
             {imageManager.imageFormError && (
               <p className="rounded border-2 border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
@@ -117,9 +147,10 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
               </button>
               <button
                 type="submit"
-                className="rounded bg-[var(--theme-accent)] px-6 py-2 font-bold text-white transition-colors hover:bg-opacity-90"
+                disabled={imageManager.imageUploadBusy}
+                className="rounded bg-[var(--theme-accent)] px-6 py-2 font-bold text-white transition-colors hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {imageManager.editingImageId ? '确认保存' : '确认添加'}
+                {imageManager.imageUploadBusy ? '上传中...' : imageManager.editingImageId ? '确认保存' : '确认添加'}
               </button>
             </div>
           </form>

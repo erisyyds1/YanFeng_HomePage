@@ -1,4 +1,5 @@
 import { VideoContent } from '../types';
+import { getAdminAuthHeaders } from './adminAuth';
 import { API_BASE_URL } from './config';
 
 export const addVideo = async (video: Omit<VideoContent, 'id'>): Promise<VideoContent | null> => {
@@ -7,6 +8,7 @@ export const addVideo = async (video: Omit<VideoContent, 'id'>): Promise<VideoCo
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAdminAuthHeaders(),
       },
       body: JSON.stringify(video),
     });
@@ -27,6 +29,7 @@ export const updateVideo = async (id: string, video: Omit<VideoContent, 'id'>): 
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getAdminAuthHeaders(),
       },
       body: JSON.stringify(video),
     });
@@ -46,6 +49,9 @@ export const deleteVideo = async (id: string): Promise<boolean> => {
     try {
         const response = await fetch(`${API_BASE_URL}/videos/${id}`, {
             method: 'DELETE',
+            headers: {
+                ...getAdminAuthHeaders(),
+            },
         });
         return response.ok;
     } catch (error) {

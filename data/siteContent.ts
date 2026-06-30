@@ -22,9 +22,9 @@ import {
 import type { ActivityItem, AnchorId, NavItem, OfficialGroup } from '../types';
 
 export const HERO_IMAGE = '/image/yanfeng-hero.jpg';
-export const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.png';
-export const BLACKBOARD_PANEL_IMAGE = '/image/blackboard-panel.png';
-export const JOIN_IMAGE = '/image/join-2025-anniversary.png';
+export const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.webp';
+export const BLACKBOARD_PANEL_IMAGE = '/image/blackboard-panel.webp';
+export const JOIN_IMAGE = '/image/join-2025-anniversary.webp';
 export const JOIN_GROUP_NUMBER = '737508445';
 
 export const NAV_ITEMS: NavItem[] = [
@@ -126,7 +126,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
     description: '以泛 VOCALOID 创作为中心，也交流 Synthesizer V、CeVIO、UTAU 等音声合成内容。',
     newcomerNote: '术术人、创作者、音乐萌新或只是想找到同好，都可以获得独特体验。',
     activities: ['作品翻调', '原创曲目', '调校教学', '作编曲教学'],
-    image: '/image/group-vocaloid.png',
+    image: '/image/group-vocaloid.webp',
     icon: Wand2
   },
   {

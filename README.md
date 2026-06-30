@@ -53,10 +53,24 @@ DIFY_API_URL=https://api.dify.ai/v1
 - `GET /articles`
 - `GET /videos`
 - `POST /videos`
+- `PATCH /videos/:id`
 - `DELETE /videos/:id`
+- `GET /site-settings`
+- `PATCH /site-settings`
+- `GET /media-images`
+- `POST /media-images`
+- `PATCH /media-images/:id`
+- `DELETE /media-images/:id`
 - `POST /chat-messages`
 
 数据存储在 `db.json`，适合本地演示和内容录入，不适合作为正式生产数据库。
+
+## 上线后端方案
+
+Cloudflare Pages / Functions / D1 / R2 的上线方案见：
+
+- `docs/cloudflare-backend-plan.md`
+- `docs/cloudflare-d1-schema.sql`
 
 ## 构建
 

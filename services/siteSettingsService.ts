@@ -1,4 +1,5 @@
 import { SiteSettings } from '../types';
+import { getAdminAuthHeaders } from './adminAuth';
 import { API_BASE_URL } from './config';
 
 export const fetchSiteSettings = async (): Promise<SiteSettings | null> => {
@@ -20,6 +21,7 @@ export const updateSiteSettings = async (settings: SiteSettings): Promise<SiteSe
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getAdminAuthHeaders(),
       },
       body: JSON.stringify(settings),
     });

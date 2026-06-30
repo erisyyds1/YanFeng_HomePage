@@ -1,8 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { ManagedImageCategory, ManagedImageItem } from '../types';
 import { addManagedImage, deleteManagedImage, fetchManagedImages, updateManagedImage } from '../services/mediaImageService';
+import { uploadImageFile } from '../services/uploadService';
 
 const MANAGED_IMAGES_STORAGE_KEY = 'yanfeng-managed-images';
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const ALLOWED_UPLOAD_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const createManagedImageId = () => window.crypto?.randomUUID?.() || `media-${Date.now()}`;
 
@@ -17,6 +20,9 @@ export const useManagedImages = () => {
   const [imageFormCategory, setImageFormCategory] = useState<ManagedImageCategory | null>(null);
   const [imageFormTitle, setImageFormTitle] = useState('');
   const [imageFormUrl, setImageFormUrl] = useState('');
+  const [imageUploadFile, setImageUploadFile] = useState<File | null>(null);
+  const [imageUploadPreviewUrl, setImageUploadPreviewUrl] = useState('');
+  const [imageUploadBusy, setImageUploadBusy] = useState(false);
   const [imageFormError, setImageFormError] = useState('');
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
   const [managedImageNotice, setManagedImageNotice] = useState('');
@@ -25,6 +31,14 @@ export const useManagedImages = () => {
   useEffect(() => {
     window.localStorage.setItem(MANAGED_IMAGES_STORAGE_KEY, JSON.stringify(managedImages));
   }, [managedImages]);
+
+  useEffect(() => {
+    return () => {
+      if (imageUploadPreviewUrl) {
+        URL.revokeObjectURL(imageUploadPreviewUrl);
+      }
+    };
+  }, [imageUploadPreviewUrl]);
 
   useEffect(() => {
     const loadImages = async () => {
@@ -37,10 +51,17 @@ export const useManagedImages = () => {
     void loadImages();
   }, []);
 
+  const resetUploadState = () => {
+    setImageUploadFile(null);
+    setImageUploadPreviewUrl('');
+    setImageUploadBusy(false);
+  };
+
   const resetManagedImageForm = () => {
     setImageFormCategory(null);
     setImageFormTitle('');
     setImageFormUrl('');
+    resetUploadState();
     setImageFormError('');
     setEditingImageId(null);
   };
@@ -49,6 +70,7 @@ export const useManagedImages = () => {
     setImageFormCategory(category);
     setImageFormTitle('');
     setImageFormUrl('');
+    resetUploadState();
     setImageFormError('');
     setEditingImageId(null);
     setManagedImageNotice('');
@@ -58,19 +80,56 @@ export const useManagedImages = () => {
     setImageFormCategory(image.category);
     setImageFormTitle(image.title);
     setImageFormUrl(image.imageUrl);
+    resetUploadState();
     setImageFormError('');
     setEditingImageId(image.id);
     setManagedImageNotice('');
+  };
+
+  const selectManagedImageFile = (file: File | null) => {
+    if (!file) return;
+
+    if (!ALLOWED_UPLOAD_TYPES.has(file.type)) {
+      setImageFormError('请上传 JPG、PNG 或 WebP 图片。');
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setImageFormError('图片不能超过 8 MB。');
+      return;
+    }
+
+    setImageUploadFile(file);
+    setImageUploadPreviewUrl(URL.createObjectURL(file));
+    setImageFormError('');
+
+    if (!imageFormTitle.trim()) {
+      setImageFormTitle(file.name.replace(/\.[^.]+$/, ''));
+    }
   };
 
   const submitManagedImage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!imageFormCategory) return;
 
-    const cleanImageUrl = imageFormUrl.trim();
-    if (!cleanImageUrl) {
-      setImageFormError('图片地址不能为空。');
+    let cleanImageUrl = imageFormUrl.trim();
+
+    if (!cleanImageUrl && !imageUploadFile) {
+      setImageFormError('请先拖入或选择一张图片。');
       return;
+    }
+
+    if (imageUploadFile) {
+      setImageUploadBusy(true);
+      const uploadedImage = await uploadImageFile(imageUploadFile, imageFormCategory);
+      setImageUploadBusy(false);
+
+      if (!uploadedImage?.url) {
+        setImageFormError('图片上传失败，请确认 API 服务正在运行。');
+        return;
+      }
+
+      cleanImageUrl = uploadedImage.url;
     }
 
     const imageData = {
@@ -123,12 +182,16 @@ export const useManagedImages = () => {
     imageFormCategory,
     imageFormTitle,
     imageFormUrl,
+    imageUploadFile,
+    imageUploadPreviewUrl,
+    imageUploadBusy,
     imageFormError,
     editingImageId,
     managedImageNotice,
     imageDeleteTarget,
     setImageFormTitle,
     setImageFormUrl,
+    selectManagedImageFile,
     setImageDeleteTarget,
     resetManagedImageForm,
     openManagedImageForm,

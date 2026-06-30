@@ -1,4 +1,5 @@
 import { ManagedImageItem } from '../types';
+import { getAdminAuthHeaders } from './adminAuth';
 import { API_BASE_URL } from './config';
 
 export const fetchManagedImages = async (): Promise<ManagedImageItem[]> => {
@@ -20,6 +21,7 @@ export const addManagedImage = async (image: Omit<ManagedImageItem, 'id'>): Prom
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAdminAuthHeaders(),
       },
       body: JSON.stringify(image),
     });
@@ -40,6 +42,7 @@ export const updateManagedImage = async (id: string, image: Omit<ManagedImageIte
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getAdminAuthHeaders(),
       },
       body: JSON.stringify(image),
     });
@@ -58,6 +61,9 @@ export const deleteManagedImage = async (id: string): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/media-images/${encodeURIComponent(id)}`, {
       method: 'DELETE',
+      headers: {
+        ...getAdminAuthHeaders(),
+      },
     });
     return response.ok;
   } catch (error) {

@@ -137,7 +137,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
       <div className="absolute right-[-2%] top-1/2 z-10 aspect-[4/3] w-[88vw] max-w-[1260px] -translate-y-[47%] md:right-[1%] md:w-[76vw] lg:right-[7%] lg:w-[70vw]">
         <div className="relative h-full w-full">
           <img
-            src="/image/media-scene.png"
+            src="/image/media-scene.webp"
             alt="檐枫万象场景"
             className="absolute inset-0 h-full w-full object-cover"
             draggable={false}

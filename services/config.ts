@@ -1,2 +1,3 @@
-// Basic configuration for the API
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+
+export const API_BASE_URL = configuredApiUrl ? configuredApiUrl.replace(/\/+$/, '') : '/api';
