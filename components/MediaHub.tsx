@@ -74,9 +74,9 @@ const MEDIA_HOTSPOTS: {
   },
   {
     id: 'wechat',
-    area: 'left-[24%] bottom-[4%] h-[42%] w-[45%]',
-    clipPath: 'polygon(7% 23%, 72% 3%, 100% 33%, 86% 90%, 16% 100%, 0% 66%)',
-    polygonPoints: '7,23 72,3 100,33 86,90 16,100 0,66'
+    area: 'left-[23%] top-[40%] h-[38%] w-[39%]',
+    clipPath: 'polygon(10% 18%, 42% 2%, 78% 0%, 100% 24%, 88% 78%, 30% 100%, 0% 72%, 4% 38%)',
+    polygonPoints: '10,18 42,2 78,0 100,24 88,78 30,100 0,72 4,38'
   }
 ];
 
@@ -158,14 +158,37 @@ const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
                   WebkitClipPath: spot.clipPath
                 }}
                 />
+                <span
+                  className={`pointer-events-none absolute inset-[-10%] mix-blend-screen blur-xl transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}
+                  style={{
+                    clipPath: spot.clipPath,
+                    WebkitClipPath: spot.clipPath,
+                    background:
+                      'radial-gradient(circle at 52% 52%, rgba(255,232,188,0.30) 0%, rgba(255,202,126,0.18) 34%, rgba(255,246,214,0.10) 56%, rgba(255,246,214,0) 74%)'
+                  }}
+                />
                 <svg
-                  className={`pointer-events-none absolute inset-0 transition duration-300 ${isActive ? 'opacity-100 drop-shadow-[0_0_18px_rgba(200,50,42,0.85)]' : 'opacity-0'}`}
+                  className={`pointer-events-none absolute inset-0 mix-blend-screen transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`}
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
                   aria-hidden="true"
                 >
-                  <polygon points={spot.polygonPoints} fill="rgba(200,50,42,0.18)" stroke="rgba(200,50,42,0.94)" strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
-                  <polygon points={spot.polygonPoints} fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="0.7" vectorEffect="non-scaling-stroke" />
+                  <defs>
+                    <filter id={`hotspot-edge-glow-${spot.id}`} x="-45%" y="-45%" width="190%" height="190%">
+                      <feGaussianBlur stdDeviation="3.4" result="edgeGlow" />
+                      <feMerge>
+                        <feMergeNode in="edgeGlow" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <polygon
+                    points={spot.polygonPoints}
+                    fill="none"
+                    stroke="rgba(255,232,188,0.24)"
+                    strokeWidth="5"
+                    vectorEffect="non-scaling-stroke"
+                    filter={`url(#hotspot-edge-glow-${spot.id})`}
+                  />
                 </svg>
               </div>
             );

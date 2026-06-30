@@ -122,9 +122,9 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     title: '番剧鉴赏组',
     label: 'ANIME',
     qq: '924171013',
-    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。',
+    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。每年年末会组织一次大型评奖活动GMA。',
     newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
-    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐'],
+    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐', 'GMA'],
     icon: Video
   },
   {
@@ -142,14 +142,14 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     qq: '496866658',
     description: '热爱绘画、设计、文字、音乐、后期等同学们的大家庭，涵盖泛 ACGN 文化相关创作。',
     newcomerNote: '可以分享作品，也可以从观摩、学习、协作开始。',
-    activities: ['绘画设计', '手书', '视频剪辑', '作品交流'],
+    activities: ['绘画设计', '手书', '视频剪辑', '作品交流', '手书创作'],
     icon: PenTool
   },
   {
     title: '翻唱组',
     label: 'VOCAL',
     qq: '745254525',
-    description: '面向所有热爱 ACGN 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
+    description: '檐枫大型晚会中重要的节目来源。面向所有热爱 ACGN 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
     newcomerNote: '觉得自己水平还不够也没关系，唱得开心才是最重要的目标。',
     activities: ['新生歌会', 'KTV 聚会', '翻唱交流', '晚会节目'],
     icon: Mic2
@@ -158,7 +158,7 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     title: '舞台剧组',
     label: 'STAGE',
     qq: '912127654',
-    description: '爱好表演、舞台剧、剧本创作和 cos 的大家聚在一起玩的地方。',
+    description: '爱好表演、舞台剧、剧本创作和 cos 的大家聚在一起玩的地方。每次大型晚会都会提供一到两台精彩舞台剧',
     newcomerNote: '对表演、剧本、舞台或幕后协作感兴趣都可以来。',
     activities: ['剧本创作', '舞台排练', '角色演出', 'Cos 协作'],
     icon: Theater
@@ -176,16 +176,16 @@ const OFFICIAL_GROUPS: OfficialGroup[] = [
     title: 'Wota 艺组',
     label: 'WOTA',
     qq: '876209001',
-    description: '用应援棒描绘光与影。每周常有教学和练习，也会进行表演和企划视频录制。',
-    newcomerNote: '新人不需要基础，可以从周三、周六晚上的组活练习开始。',
-    activities: ['Wota 教学', '组活练习', '晚会表演', '企划视频'],
+    description: '用光棒描绘光与影，为喜欢的动画、偶像以及歌曲应援。每周组活都会进行教学和练习，也会参与晚会表演和进行各种企划视频录制。',
+    newcomerNote: '无需基础，来了就教，包教包会。',
+    activities: ['新人友好', '组活练习', '晚会表演', '企划视频'],
     icon: Clapperboard
   },
   {
     title: '轻音组',
     label: 'BAND',
     qq: '914316313',
-    description: '面向乐器、乐队和 ACGN 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。',
+    description: '面向乐器、乐队和 ACGN 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。参与晚会表演，不定时会有轻音组live专场。',
     newcomerNote: '乐器高手、练习新手，甚至只是想点歌听的纯路人都欢迎。',
     activities: ['琴技交流', '乐队组建', '专场 Live', 'ACGN 音乐讨论'],
     icon: Radio
