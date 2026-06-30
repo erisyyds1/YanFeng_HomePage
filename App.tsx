@@ -475,7 +475,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'groups'}
               data-state={getPanelState('groups')}
               style={getSecondaryPanelStyle(2)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 md:px-10"
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 pb-10 pt-24 md:px-10"
             >
               <GroupsPage
                 selectedGroup={selectedGroup}

@@ -23,6 +23,7 @@ export interface OfficialGroup {
   description: string;
   newcomerNote: string;
   activities: string[];
+  image: string;
   icon: ElementType;
 }
 

@@ -17,19 +17,19 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
   const activeGroupCopied = copiedGroupTitle === activeGroup.title;
 
   return (
-    <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
-      <div className="mb-7 flex flex-col gap-4 border-b border-white/15 pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto flex h-full min-h-0 max-w-[1600px] flex-col">
+      <div className="mb-4 shrink-0 flex flex-col gap-3 border-b border-white/15 pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
-          <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">十大官方组</h2>
+          <h2 className="mt-2 text-5xl font-black tracking-[-0.05em] text-white md:text-6xl">十大官方组</h2>
         </div>
         <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
           可以同时加入多个组，无加入限制，无强制绑定。
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-        <div className="grid gap-1 pr-1">
+      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="grid min-h-0 gap-1 overflow-y-auto pr-1">
           {OFFICIAL_GROUPS.map((group, index) => {
             const Icon = group.icon;
             const active = index === selectedGroup;
@@ -55,10 +55,10 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
           })}
         </div>
 
-        <div className="relative overflow-hidden border border-white/10 bg-[#121212] p-7 md:p-10">
+        <div className="relative min-h-0 overflow-hidden border border-white/10 bg-[#121212] p-6 md:p-8">
           <div className="absolute right-8 top-8 text-[7rem] font-black leading-none text-white/[0.03] md:text-[12rem]">{activeGroup.label}</div>
-          <div className="relative z-10">
-            <div className="mb-8">
+          <div className="relative z-10 flex h-full min-h-0 flex-col">
+            <div className="shrink-0">
               <div className="flex flex-wrap items-end gap-4">
                 <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white md:h-20 md:w-20">
                   <GroupIcon className="h-8 w-8 md:h-10 md:w-10" />
@@ -97,25 +97,40 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
                   </button>
                 </div>
               </div>
-            </div>
-            <p className="text-2xl font-black leading-relaxed text-white md:text-4xl">{activeGroup.description}</p>
-            <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed text-white/60">{activeGroup.newcomerNote}</p>
+              <div className="mt-6 grid min-h-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] xl:items-start">
+                <div>
+                  <p className="text-xl font-black leading-relaxed text-white md:text-3xl">{activeGroup.description}</p>
+                  <p className="mt-3 max-w-3xl text-sm font-bold leading-relaxed text-white/60 md:text-base">{activeGroup.newcomerNote}</p>
+                </div>
 
-            <div className="mt-10 bg-black p-5">
-              <p className="mb-4 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
-              <div className="flex flex-wrap gap-2">
-                {activeGroup.activities.map((activity) => (
-                  <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
-                    {activity}
-                  </span>
-                ))}
+                <figure className="relative flex w-fit max-w-full justify-self-end overflow-hidden border border-white/12 bg-[#050505] p-2 shadow-[8px_8px_0_rgb(0_0_0/0.28)]">
+                  <img src={activeGroup.image} alt={`${activeGroup.title}活动照片`} className="block max-h-[270px] max-w-full object-contain xl:max-h-[360px]" />
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_74%_22%,rgba(200,50,42,0.16),transparent_34%),linear-gradient(180deg,transparent_54%,rgba(0,0,0,0.66)_100%)]"></div>
+                  <figcaption className="absolute bottom-4 left-4 border-l-4 border-[#c8322a] bg-black/58 px-3 py-2 backdrop-blur-sm">
+                    <span className="block text-[10px] font-black tracking-[0.22em] text-[#c8322a]">GROUP PHOTO</span>
+                    <span className="mt-1 block text-sm font-black text-white">{activeGroup.title}</span>
+                  </figcaption>
+                </figure>
+              </div>
+            </div>
+
+            <div className="mt-auto grid shrink-0 gap-3 pt-4">
+              <div className="bg-black p-4">
+                <p className="mb-3 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
+                <div className="flex flex-wrap gap-2">
+                  {activeGroup.activities.map((activity) => (
+                    <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
+                      {activity}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-10 overflow-hidden border-y border-white/15 py-4">
+      <div className="mt-4 shrink-0 overflow-hidden border-y border-white/15 py-3">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-black tracking-[0.18em] text-[#c8322a]">兴趣组：</span>
           {INTEREST_GROUPS.map((group) => (
