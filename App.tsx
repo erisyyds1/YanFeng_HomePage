@@ -1,304 +1,47 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  Clapperboard,
-  Copy,
-  Edit3,
-  Gamepad2,
-  HeartHandshake,
-  Home,
-  Image as ImageIcon,
-  ImagePlus,
-  Link as LinkIcon,
-  LogOut,
-  Megaphone,
-  Mic2,
-  Music2,
-  NotebookPen,
-  PenTool,
-  Radio,
-  Send,
-  ShieldCheck,
-  Star,
-  Theater,
-  Trash2,
-  Trophy,
-  UserPlus,
-  Users,
-  Video,
-  Wand2,
-  X
-} from 'lucide-react';
-import { AppTheme, ManagedImageCategory, ManagedImageItem } from './types';
+import { ArrowLeft } from 'lucide-react';
 import { WECHAT_ARTICLES } from './constants';
+import { SECONDARY_BG_IMAGE, SCREEN_IDS } from './data/siteContent';
+import type { AnchorId, OfficialGroup } from './types';
+import { AppTheme } from './types';
+import { copyText } from './utils/clipboard';
+import { useEditMode } from './hooks/useEditMode';
+import { useManagedImages } from './hooks/useManagedImages';
+import { useSiteSettings } from './hooks/useSiteSettings';
 
+import AdminOverlays from './components/AdminOverlays';
 import EventGallery from './components/EventGallery';
+import ManagedImageArchive from './components/ManagedImageArchive';
 import MediaHub, { getMediaEntry, MEDIA_ENTRIES, type MediaContentId } from './components/MediaHub';
-import RetroCard from './components/RetroCard';
+import ScrollGuide from './components/ScrollGuide';
+import SiteFooter from './components/SiteFooter';
+import SiteHeader from './components/SiteHeader';
 import WechatArchive from './components/WechatArchive';
-import { addManagedImage, deleteManagedImage, fetchManagedImages, updateManagedImage } from './services/mediaImageService';
-import { fetchSiteSettings, updateSiteSettings } from './services/siteSettingsService';
-import logo from './assets/logo.svg';
+import ActivitiesPage from './pages/ActivitiesPage';
+import GroupsPage from './pages/GroupsPage';
+import HomePage from './pages/HomePage';
+import InfoPage from './pages/InfoPage';
+import JoinPage from './pages/JoinPage';
 
-type AnchorId = 'home' | 'about' | 'groups' | 'activities' | 'media' | 'join';
-
-interface OfficialGroup {
-  title: string;
-  label: string;
-  qq: string;
-  description: string;
-  newcomerNote: string;
-  activities: string[];
-  icon: React.ElementType;
-}
-
-interface ActivityItem {
-  title: string;
-  kicker: string;
-  description: string;
-  details: string[];
-  icon: React.ElementType;
-}
-
-const HERO_IMAGE = '/image/yanfeng-hero.jpg';
-const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.png';
-const BLACKBOARD_PANEL_IMAGE = '/image/blackboard-panel.png';
-const JOIN_IMAGE = '/image/join-2025-anniversary.png';
-const JOIN_GROUP_NUMBER = '737508445';
-const ADMIN_PASSWORD = '18522';
-const MAIN_GROUP_STORAGE_KEY = 'yanfeng-main-group-number';
-const MANAGED_IMAGES_STORAGE_KEY = 'yanfeng-managed-images';
-
-const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React.ElementType }[] = [
-  { label: '首页', labelEn: 'INDEX', target: 'home', icon: Home },
-  { label: '情报', labelEn: 'INFORMATION', target: 'about', icon: ShieldCheck },
-  { label: '小组', labelEn: 'GROUPS', target: 'groups', icon: Users },
-  { label: '活动', labelEn: 'ACTIVITIES', target: 'activities', icon: CalendarDays },
-  { label: '万象', labelEn: 'MEDIA', target: 'media', icon: Video },
-  { label: '加入', labelEn: 'JOIN US', target: 'join', icon: UserPlus }
-];
-
-const SCREEN_IDS: AnchorId[] = ['home', 'about', 'groups', 'activities', 'media', 'join'];
 const SITE_FOOTER_HEIGHT = 'clamp(300px, 38dvh, 420px)';
 const PAGE_TRANSITION_MS = 1180;
 const PAGE_TRANSITION_EASE = 'cubic-bezier(0.68, 0.02, 0.88, 0.58)';
-const SCROLL_GUIDE_DOTS = Array.from({ length: 28 }, (_, index) => index);
-
-const formatGuideNumber = (value: number) => String(value).padStart(2, '0');
-
-const ScrollGuide: React.FC<{ currentIndex: number; total: number }> = ({ currentIndex, total }) => {
-  return (
-    <div className="pointer-events-none absolute bottom-4 left-0 z-40 w-[300px] sm:w-[330px] md:bottom-5 md:w-[430px]">
-      <style>{`
-        @keyframes scrollGuideArrowLeft {
-          0% { transform: translateX(70px); opacity: 0; }
-          18% { opacity: 1; }
-          76% { opacity: 1; }
-          100% { transform: translateX(0); opacity: 0; }
-        }
-
-        .scroll-guide-arrow {
-          animation: scrollGuideArrowLeft 1.45s cubic-bezier(0.45, 0, 0.22, 1) infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .scroll-guide-arrow {
-            animation: none;
-          }
-        }
-      `}</style>
-
-      <div className="relative h-[58px] pl-1 text-white/60 md:h-[64px]">
-        <div className="absolute left-0 top-[15px] flex w-[220px] items-center justify-between sm:w-[260px] md:w-[350px]">
-          {SCROLL_GUIDE_DOTS.map((dot) => (
-            <span key={dot} className="h-1 w-1 rounded-full bg-white/48" />
-          ))}
-        </div>
-
-        <span className="scroll-guide-arrow absolute left-[100px] top-[3px] sm:left-[116px] md:left-[150px]" aria-hidden="true">
-          <span className="block h-0 w-0 border-y-[9px] border-r-[20px] border-y-transparent border-r-[#c8322a] md:border-y-[11px] md:border-r-[24px]" />
-        </span>
-
-        <span className="absolute left-[64px] top-9 font-mono text-base font-black tracking-[0.2em] text-white/72 sm:left-[78px] md:left-[96px] md:top-10 md:text-xl">
-          {formatGuideNumber(currentIndex + 1)}/{formatGuideNumber(total)}
-        </span>
-
-        <span className="absolute left-[245px] top-[5px] text-sm font-black tracking-[0.06em] text-white/75 sm:left-[285px] md:left-[382px] md:text-base">SCROLL</span>
-      </div>
-    </div>
-  );
-};
-
-const OFFICIAL_GROUPS: OfficialGroup[] = [
-  {
-    title: '番剧鉴赏组',
-    label: 'ANIME',
-    qq: '924171013',
-    description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。每年年末会组织一次大型评奖活动GMA。',
-    newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
-    activities: ['新番交流', '作品安利', '放映讨论', '补番推荐', 'GMA'],
-    icon: Video
-  },
-  {
-    title: '宅舞组',
-    label: 'DANCE',
-    qq: '1018528156',
-    description: '檐枫大型晚会中重要的节目来源。一起约舞、练舞、教学、排练节目，也会录制宅舞视频。',
-    newcomerNote: '无论是否有基础，只要对宅舞感兴趣，都欢迎加入。',
-    activities: ['日常约舞', '社舞教学', '群舞教学', '视频录制'],
-    icon: Music2
-  },
-  {
-    title: '创作组',
-    label: 'CREATE',
-    qq: '496866658',
-    description: '热爱绘画、设计、文字、音乐、后期等同学们的大家庭，涵盖泛 ACGN 文化相关创作。',
-    newcomerNote: '可以分享作品，也可以从观摩、学习、协作开始。',
-    activities: ['绘画设计', '手书', '视频剪辑', '作品交流', '手书创作'],
-    icon: PenTool
-  },
-  {
-    title: '翻唱组',
-    label: 'VOCAL',
-    qq: '745254525',
-    description: '檐枫大型晚会中重要的节目来源。面向所有热爱 ACGN 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
-    newcomerNote: '觉得自己水平还不够也没关系，唱得开心才是最重要的目标。',
-    activities: ['新生歌会', 'KTV 聚会', '翻唱交流', '晚会节目'],
-    icon: Mic2
-  },
-  {
-    title: '舞台剧组',
-    label: 'STAGE',
-    qq: '912127654',
-    description: '爱好表演、舞台剧、剧本创作和 cos 的大家聚在一起玩的地方。每次大型晚会都会提供一到两台精彩舞台剧',
-    newcomerNote: '对表演、剧本、舞台或幕后协作感兴趣都可以来。',
-    activities: ['剧本创作', '舞台排练', '角色演出', 'Cos 协作'],
-    icon: Theater
-  },
-  {
-    title: 'Delta 组',
-    label: 'DELTA',
-    qq: '290772952',
-    description: '提供创作与分享的平台，也协助事务组进行社团活动的预热与宣传。',
-    newcomerNote: '适合分享作品、写杂谈、做采访、安利动漫游戏小说等泛 ACGN 内容。',
-    activities: ['文字创作', '作品安利', '记者采访', '推文放送'],
-    icon: NotebookPen
-  },
-  {
-    title: 'Wota 艺组',
-    label: 'WOTA',
-    qq: '876209001',
-    description: '用光棒描绘光与影，为喜欢的动画、偶像以及歌曲应援。每周组活都会进行教学和练习，也会参与晚会表演和进行各种企划视频录制。',
-    newcomerNote: '无需基础，来了就教，包教包会。',
-    activities: ['新人友好', '组活练习', '晚会表演', '企划视频'],
-    icon: Clapperboard
-  },
-  {
-    title: '轻音组',
-    label: 'BAND',
-    qq: '914316313',
-    description: '面向乐器、乐队和 ACGN 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。参与晚会表演，不定时会有轻音组live专场。',
-    newcomerNote: '乐器高手、练习新手，甚至只是想点歌听的纯路人都欢迎。',
-    activities: ['琴技交流', '乐队组建', '专场 Live', 'ACGN 音乐讨论'],
-    icon: Radio
-  },
-  {
-    title: 'VOCALOID 组',
-    label: 'VOCALOID',
-    qq: '361980809',
-    description: '以泛 VOCALOID 创作为中心，也交流 Synthesizer V、CeVIO、UTAU 等音声合成内容。',
-    newcomerNote: '术术人、创作者、音乐萌新或只是想找到同好，都可以获得独特体验。',
-    activities: ['作品翻调', '原创曲目', '调校教学', '作编曲教学'],
-    icon: Wand2
-  },
-  {
-    title: '事务组',
-    label: 'SUPPORT',
-    qq: '1054869730',
-    description: '协助举办社团内各类大小活动，是冬日庆典、社庆、百团等活动顺利进行的重要后勤力量。',
-    newcomerNote: '适合愿意做组织、协调、设备调试、后勤支持和现场执行的同学。',
-    activities: ['设备调试', '后勤支持', '活动协助', '大型活动保障'],
-    icon: Megaphone
-  }
-];
-
-const INTEREST_GROUPS = ['明日方舟组', '东方组', '拉拉组', 'Cos 组', '配音组', '摄影剪辑组', '文艺部', '更多自由方向'];
-
-const ACTIVITIES: ActivityItem[] = [
-  {
-    title: '百团大战 / 迎新',
-    kicker: 'ENTRY POINT',
-    description: '新生接触檐枫的重要入口。摊位、节目表演、社团介绍、抽奖和现场交流都会在这里发生。',
-    details: ['开学约一个月后', '摊位介绍', '节目表演'],
-    icon: Megaphone
-  },
-  {
-    title: '冬日庆典',
-    kicker: '1ST TERM FINALE',
-    description: '第一学期末的大型晚会。乐队、宅舞、翻唱、舞台剧、创作组手书、Wota 艺都会在这里出现。',
-    details: ['12 月左右', '大型晚会', '多组节目'],
-    icon: Star
-  },
-  {
-    title: '社庆',
-    kicker: 'ANNIVERSARY',
-    description: '第二学期末的大型晚会。不只是节目展示，也承载着社团回忆、成员情感和归属感。',
-    details: ['5 月左右', '周年纪念', '舞台节目'],
-    icon: HeartHandshake
-  },
-  {
-    title: 'GMA',
-    kicker: 'ANIME AWARDS',
-    description: '檐枫的年终动画评选活动，包含动画评选、视频剪辑、奖项设计、活动筹备和直播颁奖。',
-    details: ['年终评选', '视频制作', '直播颁奖'],
-    icon: Trophy
-  },
-  {
-    title: '日常活动',
-    kicker: 'DAILY LIFE',
-    description: '放映会、各组组活、练舞、Wota 教学、合宿、联合观影、轻音专场和高校联动。',
-    details: ['不定期', '自由参加', '认识朋友'],
-    icon: Gamepad2
-  }
-];
 
 const App: React.FC = () => {
+  const editMode = useEditMode();
+  const siteSettings = useSiteSettings();
+  const imageManager = useManagedImages();
+
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [copiedGroupTitle, setCopiedGroupTitle] = useState<string | null>(null);
-  const [joinGroupCopied, setJoinGroupCopied] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(() => window.sessionStorage.getItem('yanfeng-edit-mode') === 'true');
-  const [mainGroupNumber, setMainGroupNumber] = useState(() => window.localStorage.getItem(MAIN_GROUP_STORAGE_KEY) || JOIN_GROUP_NUMBER);
-  const [managedImages, setManagedImages] = useState<ManagedImageItem[]>(() => {
-    try {
-      return JSON.parse(window.localStorage.getItem(MANAGED_IMAGES_STORAGE_KEY) || '[]') as ManagedImageItem[];
-    } catch {
-      return [];
-    }
-  });
-  const [adminAccessOpen, setAdminAccessOpen] = useState(false);
-  const [adminAccessValue, setAdminAccessValue] = useState('');
-  const [groupEditorOpen, setGroupEditorOpen] = useState(false);
-  const [groupEditorValue, setGroupEditorValue] = useState(mainGroupNumber);
-  const [groupEditorError, setGroupEditorError] = useState('');
-  const [groupEditorNotice, setGroupEditorNotice] = useState('');
-  const [imageFormCategory, setImageFormCategory] = useState<ManagedImageCategory | null>(null);
-  const [imageFormTitle, setImageFormTitle] = useState('');
-  const [imageFormUrl, setImageFormUrl] = useState('');
-  const [imageFormError, setImageFormError] = useState('');
-  const [editingImageId, setEditingImageId] = useState<string | null>(null);
-  const [managedImageNotice, setManagedImageNotice] = useState('');
-  const [imageDeleteTarget, setImageDeleteTarget] = useState<ManagedImageItem | null>(null);
   const [activeScreen, setActiveScreen] = useState<AnchorId>('home');
   const [activeMediaEntry, setActiveMediaEntry] = useState<MediaContentId | null>(null);
   const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
   const [transitionDirection, setTransitionDirection] = useState(0);
+  const [footerVisible, setFooterVisible] = useState(false);
+
   const activeScreenRef = useRef<AnchorId>('home');
   const activeMediaEntryRef = useRef<MediaContentId | null>(null);
-  const [footerVisible, setFooterVisible] = useState(false);
   const footerVisibleRef = useRef(false);
   const mediaPageRef = useRef<HTMLElement | null>(null);
   const radioAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -310,39 +53,13 @@ const App: React.FC = () => {
   const wheelLockRef = useRef(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
+  const { isEditMode } = editMode;
+  const { mainGroupNumber, joinGroupCopied } = siteSettings;
+  const activeMedia = activeMediaEntry ? getMediaEntry(activeMediaEntry) : null;
+  const activeScreenIndex = SCREEN_IDS.indexOf(activeScreen);
+
   useEffect(() => {
     document.body.setAttribute('data-theme', AppTheme.DEFAULT);
-  }, []);
-
-  useEffect(() => {
-    window.sessionStorage.setItem('yanfeng-edit-mode', String(isEditMode));
-  }, [isEditMode]);
-
-  useEffect(() => {
-    window.localStorage.setItem(MAIN_GROUP_STORAGE_KEY, mainGroupNumber);
-  }, [mainGroupNumber]);
-
-  useEffect(() => {
-    window.localStorage.setItem(MANAGED_IMAGES_STORAGE_KEY, JSON.stringify(managedImages));
-  }, [managedImages]);
-
-  useEffect(() => {
-    const loadManagedContent = async () => {
-      const [settings, images] = await Promise.all([
-        fetchSiteSettings(),
-        fetchManagedImages()
-      ]);
-
-      if (settings?.mainGroupNumber) {
-        setMainGroupNumber(settings.mainGroupNumber);
-      }
-
-      if (images.length > 0) {
-        setManagedImages(images);
-      }
-    };
-
-    void loadManagedContent();
   }, []);
 
   useEffect(() => {
@@ -365,6 +82,8 @@ const App: React.FC = () => {
       if (outgoingTimerRef.current) window.clearTimeout(outgoingTimerRef.current);
     };
   }, []);
+
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const removeRadioAutoPlayListeners = () => {
     if (!radioAutoPlayCleanupRef.current) return;
@@ -419,8 +138,6 @@ const App: React.FC = () => {
     return cleanup;
   }, []);
 
-  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   const goToScreen = (target: AnchorId) => {
     const current = activeScreenRef.current;
     if (current === target) return;
@@ -453,181 +170,13 @@ const App: React.FC = () => {
     if (!groupNumber || groupNumber === '待补充') return;
 
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(groupNumber);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = groupNumber;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-
+      await copyText(groupNumber);
       setCopiedGroupTitle(group.title);
       window.setTimeout(() => {
         setCopiedGroupTitle((current) => (current === group.title ? null : current));
       }, 1600);
     } catch (error) {
       console.error('Failed to copy group number:', error);
-    }
-  };
-
-  const copyJoinGroupNumber = async () => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(mainGroupNumber);
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = mainGroupNumber;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-
-      setJoinGroupCopied(true);
-      window.setTimeout(() => setJoinGroupCopied(false), 1600);
-    } catch (error) {
-      console.error('Failed to copy join group number:', error);
-    }
-  };
-
-  const handleSunflowerAdminAccess = () => {
-    setAdminAccessValue('');
-    setAdminAccessOpen(true);
-  };
-
-  const submitAdminAccess = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (adminAccessValue.trim() === ADMIN_PASSWORD) {
-      setIsEditMode(true);
-    }
-
-    setAdminAccessOpen(false);
-    setAdminAccessValue('');
-  };
-
-  const exitEditMode = () => {
-    setIsEditMode(false);
-  };
-
-  const openGroupEditor = () => {
-    setGroupEditorValue(mainGroupNumber);
-    setGroupEditorError('');
-    setGroupEditorNotice('');
-    setGroupEditorOpen(true);
-  };
-
-  const submitGroupNumber = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const cleanGroupNumber = groupEditorValue.trim();
-    if (!cleanGroupNumber) {
-      setGroupEditorError('群号不能为空。');
-      return;
-    }
-
-    setGroupEditorError('');
-    setGroupEditorNotice('');
-    setMainGroupNumber(cleanGroupNumber);
-    const savedSettings = await updateSiteSettings({ mainGroupNumber: cleanGroupNumber });
-    if (savedSettings?.mainGroupNumber) {
-      setMainGroupNumber(savedSettings.mainGroupNumber);
-      setGroupEditorOpen(false);
-      return;
-    }
-
-    setGroupEditorNotice('API 暂时没有保存成功，已先保存在当前浏览器。');
-  };
-
-  const createManagedImageId = () => {
-    return window.crypto?.randomUUID?.() || `media-${Date.now()}`;
-  };
-
-  const resetManagedImageForm = () => {
-    setImageFormCategory(null);
-    setImageFormTitle('');
-    setImageFormUrl('');
-    setImageFormError('');
-    setEditingImageId(null);
-  };
-
-  const openManagedImageForm = (category: ManagedImageCategory) => {
-    setImageFormCategory(category);
-    setImageFormTitle('');
-    setImageFormUrl('');
-    setImageFormError('');
-    setEditingImageId(null);
-    setManagedImageNotice('');
-  };
-
-  const openManagedImageEditor = (image: ManagedImageItem) => {
-    setImageFormCategory(image.category);
-    setImageFormTitle(image.title);
-    setImageFormUrl(image.imageUrl);
-    setImageFormError('');
-    setEditingImageId(image.id);
-    setManagedImageNotice('');
-  };
-
-  const submitManagedImage = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!imageFormCategory) return;
-
-    const cleanImageUrl = imageFormUrl.trim();
-    if (!cleanImageUrl) {
-      setImageFormError('图片地址不能为空。');
-      return;
-    }
-
-    const imageData = {
-      title: imageFormTitle.trim() || (imageFormCategory === 'album' ? '未命名专辑图片' : '未命名画集图片'),
-      imageUrl: cleanImageUrl,
-      category: imageFormCategory
-    };
-    const savedImage = editingImageId
-      ? await updateManagedImage(editingImageId, imageData)
-      : await addManagedImage(imageData);
-
-    setManagedImages((currentImages) => {
-      if (editingImageId) {
-        const fallbackImage = { id: editingImageId, ...imageData };
-        return currentImages.map((image) => (image.id === editingImageId ? savedImage || fallbackImage : image));
-      }
-
-      return [
-        savedImage || { id: createManagedImageId(), ...imageData },
-        ...currentImages
-      ];
-    });
-
-    resetManagedImageForm();
-
-    if (!savedImage) {
-      setManagedImageNotice(editingImageId ? 'API 暂时没有保存成功，已先在当前浏览器更新。' : 'API 暂时没有保存成功，已先保存在当前浏览器。');
-    }
-  };
-
-  const requestDeleteManagedImage = (image: ManagedImageItem) => {
-    setImageDeleteTarget(image);
-  };
-
-  const confirmDeleteManagedImage = async () => {
-    if (!imageDeleteTarget) return;
-    const image = imageDeleteTarget;
-
-    const success = await deleteManagedImage(image.id);
-    setManagedImages((currentImages) => currentImages.filter((item) => item.id !== image.id));
-    setImageDeleteTarget(null);
-
-    if (!success) {
-      setManagedImageNotice('API 暂时没有删除成功，已先从当前浏览器移除。');
     }
   };
 
@@ -680,7 +229,6 @@ const App: React.FC = () => {
     }
 
     const nextIndex = Math.min(Math.max(currentIndex + direction, 0), SCREEN_IDS.length - 1);
-
     if (nextIndex === currentIndex) return;
 
     event.preventDefault();
@@ -720,12 +268,11 @@ const App: React.FC = () => {
       }
 
       const currentIndex = SCREEN_IDS.indexOf(currentScreen);
-      const nextIndex =
-        wantsNext
-          ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1)
+      const nextIndex = wantsNext
+        ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1)
         : wantsPrevious
-            ? Math.max(currentIndex - 1, 0)
-            : currentIndex;
+          ? Math.max(currentIndex - 1, 0)
+          : currentIndex;
 
       if (nextIndex !== currentIndex) {
         event.preventDefault();
@@ -756,13 +303,6 @@ const App: React.FC = () => {
     const nextIndex = deltaX < 0 ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1) : Math.max(currentIndex - 1, 0);
     if (nextIndex !== currentIndex) goToScreen(SCREEN_IDS[nextIndex]);
   };
-
-  const activeGroup = OFFICIAL_GROUPS[selectedGroup];
-  const GroupIcon = activeGroup.icon;
-  const activeMedia = activeMediaEntry ? getMediaEntry(activeMediaEntry) : null;
-  const activeGroupCanCopy = activeGroup.qq.trim() !== '' && activeGroup.qq !== '待补充';
-  const activeGroupCopied = copiedGroupTitle === activeGroup.title;
-  const activeScreenIndex = SCREEN_IDS.indexOf(activeScreen);
 
   const getPanelStyle = (index: number): React.CSSProperties => {
     const screen = SCREEN_IDS[index];
@@ -813,411 +353,35 @@ const App: React.FC = () => {
     return 'idle';
   };
 
-  const renderManagedImageArchive = (category: ManagedImageCategory) => {
-    if (!activeMedia) return null;
-    const MediaIcon = activeMedia.icon;
-    const images = managedImages.filter((image) => image.category === category);
-    const emptyText = category === 'album' ? '暂时还没有专辑图片' : '暂时还没有画集图片';
-    const imageFormActive = imageFormCategory === category;
-
-    return (
-      <div className="min-h-[520px] border border-white/12 bg-black/38 p-5 shadow-[12px_12px_0_rgb(0_0_0/0.22)]">
-        <div className="flex flex-col gap-5 border-b border-white/12 pb-5 md:flex-row md:items-end md:justify-between">
-          <div className="flex items-end gap-4">
-            <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white">
-              <MediaIcon className="h-8 w-8" />
-            </span>
-            <div>
-              <p className="text-xs font-black tracking-[0.34em] text-[#c8322a]">{activeMedia.label}</p>
-              <h3 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">{activeMedia.title}</h3>
-            </div>
-          </div>
-
-          {isEditMode && (
-            <button
-              type="button"
-              onClick={imageFormActive ? resetManagedImageForm : () => openManagedImageForm(category)}
-              className="flex w-fit items-center gap-2 rounded-lg bg-[#c8322a] px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0px_#000] transition hover:-translate-y-0.5 hover:bg-white hover:text-[#c8322a]"
-            >
-              {imageFormActive ? <X className="h-4 w-4" /> : <ImagePlus className="h-4 w-4" />}
-              {imageFormActive ? '收起表单' : '添加图片'}
-            </button>
-          )}
-        </div>
-
-        {managedImageNotice && (
-          <p className="mt-5 border border-[#c8322a]/45 bg-[#c8322a]/12 px-4 py-3 text-sm font-bold text-white/72">
-            {managedImageNotice}
-          </p>
-        )}
-
-        {isEditMode && imageFormActive && (
-          <RetroCard variant="ticket" className="my-6">
-            <form onSubmit={submitManagedImage} className="space-y-4">
-              <h3 className="mb-4 text-xl font-bold text-[var(--theme-primary)]">
-                {editingImageId
-                  ? category === 'album'
-                    ? '编辑专辑图片'
-                    : '编辑画集图片'
-                  : category === 'album'
-                    ? '添加专辑图片'
-                    : '添加画集图片'}
-              </h3>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[var(--theme-border)]">图片标题</label>
-                  <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
-                    <Edit3 size={18} className="mr-2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={imageFormTitle}
-                      onChange={(event) => setImageFormTitle(event.target.value)}
-                      placeholder={category === 'album' ? '输入专辑图片标题...' : '输入画集图片标题...'}
-                      className="w-full bg-transparent text-black outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-[var(--theme-border)]">图片地址</label>
-                  <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
-                    <LinkIcon size={18} className="mr-2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={imageFormUrl}
-                      onChange={(event) => setImageFormUrl(event.target.value)}
-                      placeholder="/image/example.png 或 https://example.com/image.jpg"
-                      className="w-full bg-transparent text-black outline-none"
-                      required
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">提示：可以填写 public 里的路径，例如 /image/xxx.png。</p>
-                </div>
-              </div>
-
-              {imageFormUrl && (
-                <div className="text-xs text-gray-500">
-                  <p className="mb-1 font-bold">预览：</p>
-                  <img src={imageFormUrl} alt="图片预览" className="h-28 rounded border border-gray-200 bg-black object-cover" />
-                </div>
-              )}
-
-              {imageFormError && (
-                <p className="rounded border-2 border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
-                  {imageFormError}
-                </p>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={resetManagedImageForm}
-                  className="border-2 border-[var(--theme-border)] bg-white px-6 py-2 font-bold text-[var(--theme-border)] transition-colors hover:bg-gray-100"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="rounded bg-[var(--theme-accent)] px-6 py-2 font-bold text-white transition-colors hover:bg-opacity-90"
-                >
-                  {editingImageId ? '确认保存' : '确认添加'}
-                </button>
-              </div>
-            </form>
-          </RetroCard>
-        )}
-
-        {images.length > 0 ? (
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {images.map((image) => (
-              <RetroCard key={image.id} variant="paper" className="h-full">
-                <div className="flex h-full flex-col rounded border-2 border-[var(--theme-border)] bg-white p-2 shadow-md">
-                  <div className="aspect-[4/3] overflow-hidden rounded bg-black">
-                    <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
-                  </div>
-                  <div className="mt-4 flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <ImageIcon className="shrink-0 text-[var(--theme-primary)]" size={24} />
-                      <div>
-                        <h4 className="text-lg font-bold leading-tight text-[var(--theme-border)]">{image.title}</h4>
-                        <p className="mt-1 text-xs uppercase tracking-wider text-gray-500">Yanfeng Image Archive</p>
-                      </div>
-                    </div>
-
-                    {isEditMode && (
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => openManagedImageEditor(image)}
-                          className="p-1 text-gray-400 transition-colors hover:text-[var(--theme-primary)]"
-                          title="编辑图片"
-                        >
-                          <Edit3 size={19} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => requestDeleteManagedImage(image)}
-                          className="p-1 text-gray-400 transition-colors hover:text-red-500"
-                          title="删除图片"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </RetroCard>
-            ))}
-          </div>
-        ) : (
-          <div className="grid min-h-[340px] place-items-center text-center">
-            <div>
-              <MediaIcon className="mx-auto h-12 w-12 text-[#c8322a]" />
-              <p className="mt-5 text-xl font-black text-white">{emptyText}</p>
-              <p className="mt-3 text-sm font-bold text-white/45">
-                {isEditMode ? '点击右上角添加第一张图片。' : '内容整理中'}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <div className="h-[100dvh] bg-[#080808] text-[#f6f0dc] font-sans overflow-hidden selection:bg-[#c8322a] selection:text-white">
-      <div className="fixed inset-0 pointer-events-none opacity-[0.08] checker-bg"></div>
+    <div className="h-[100dvh] overflow-hidden bg-[#080808] font-sans text-[#f6f0dc] selection:bg-[#c8322a] selection:text-white">
+      <div className="checker-bg pointer-events-none fixed inset-0 opacity-[0.08]"></div>
 
-      {isEditMode && (
-        <div className="fixed bottom-5 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-3 border border-[#c8322a]/70 bg-black/82 px-4 py-3 text-white shadow-[0_18px_45px_rgb(0_0_0/0.42)] backdrop-blur-md">
-          <span className="flex items-center gap-2 text-xs font-black tracking-[0.16em] text-[#c8322a]">
-            <Edit3 className="h-4 w-4" />
-            编辑模式
-          </span>
-          <button
-            type="button"
-            onClick={exitEditMode}
-            className="flex items-center gap-2 bg-[#c8322a] px-3 py-2 text-xs font-black tracking-[0.12em] text-white transition hover:bg-white hover:text-[#c8322a]"
-          >
-            <LogOut className="h-4 w-4" />
-            退出
-          </button>
-        </div>
-      )}
+      <AdminOverlays
+        isEditMode={isEditMode}
+        onExitEditMode={editMode.exitEditMode}
+        adminAccessOpen={editMode.adminAccessOpen}
+        adminAccessValue={editMode.adminAccessValue}
+        onAdminAccessValueChange={editMode.setAdminAccessValue}
+        onCloseAdminAccess={editMode.closeAdminAccess}
+        onSubmitAdminAccess={editMode.submitAdminAccess}
+        groupEditorOpen={siteSettings.groupEditorOpen}
+        groupEditorValue={siteSettings.groupEditorValue}
+        groupEditorError={siteSettings.groupEditorError}
+        groupEditorNotice={siteSettings.groupEditorNotice}
+        onGroupEditorValueChange={siteSettings.setGroupEditorValue}
+        onClearGroupEditorFeedback={() => {
+          siteSettings.setGroupEditorError('');
+          siteSettings.setGroupEditorNotice('');
+        }}
+        onCloseGroupEditor={() => siteSettings.setGroupEditorOpen(false)}
+        onSubmitGroupNumber={siteSettings.submitGroupNumber}
+        imageDeleteTarget={imageManager.imageDeleteTarget}
+        onCancelDeleteImage={() => imageManager.setImageDeleteTarget(null)}
+        onConfirmDeleteImage={() => void imageManager.confirmDeleteManagedImage()}
+      />
 
-      {adminAccessOpen && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
-          <form onSubmit={submitAdminAccess} autoComplete="off" className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">SUNFLOWER ACCESS</p>
-                <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">诶，这里有朵向日葵</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAdminAccessOpen(false)}
-                className="p-2 text-white/45 transition hover:bg-white/10 hover:text-white"
-                aria-label="关闭"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="mt-6 border border-white/12 bg-black/45 p-3">
-              <input
-                autoFocus
-                type="text"
-                name="sunflower-message"
-                autoComplete="off"
-                spellCheck={false}
-                value={adminAccessValue}
-                onChange={(event) => {
-                  setAdminAccessValue(event.target.value);
-                }}
-                placeholder="要对向日葵说些什么？"
-                className="w-full bg-transparent font-mono text-xl font-black tracking-[0.12em] text-white outline-none placeholder:text-white/25"
-              />
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setAdminAccessOpen(false)}
-                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
-              >
-                取消
-              </button>
-              <button type="submit" className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]">
-                确认
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {groupEditorOpen && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
-          <form onSubmit={submitGroupNumber} className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">QQ GROUP</p>
-                <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">修改大群群号</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setGroupEditorOpen(false)}
-                className="p-2 text-white/45 transition hover:bg-white/10 hover:text-white"
-                aria-label="关闭"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <label className="mt-6 block text-[11px] font-black tracking-[0.22em] text-white/42">MAIN GROUP NUMBER</label>
-            <div className="mt-2 border border-white/12 bg-black/45 p-3">
-              <input
-                autoFocus
-                type="text"
-                value={groupEditorValue}
-                onChange={(event) => {
-                  setGroupEditorValue(event.target.value);
-                  setGroupEditorError('');
-                  setGroupEditorNotice('');
-                }}
-                className="w-full bg-transparent font-mono text-2xl font-black tracking-[0.1em] text-white outline-none placeholder:text-white/25"
-              />
-            </div>
-            {groupEditorError && (
-              <p className="mt-3 border border-[#c8322a]/45 bg-[#c8322a]/12 px-3 py-2 text-sm font-bold text-white/78">
-                {groupEditorError}
-              </p>
-            )}
-            {groupEditorNotice && (
-              <p className="mt-3 border border-white/14 bg-white/[0.06] px-3 py-2 text-sm font-bold text-white/62">
-                {groupEditorNotice}
-              </p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setGroupEditorOpen(false)}
-                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
-              >
-                取消
-              </button>
-              <button type="submit" className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]">
-                保存群号
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {imageDeleteTarget && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
-          <div className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
-            <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">DELETE IMAGE</p>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">删除图片</h2>
-            <p className="mt-4 text-sm font-bold leading-relaxed text-white/58">
-              确定要删除「{imageDeleteTarget.title}」吗？这个操作会从当前列表中移除它。
-            </p>
-            <div className="mt-5 overflow-hidden border border-white/12 bg-black">
-              <img src={imageDeleteTarget.imageUrl} alt={imageDeleteTarget.title} className="h-36 w-full object-cover opacity-75" />
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setImageDeleteTarget(null)}
-                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmDeleteManagedImage()}
-                className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]"
-              >
-                确认删除
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/72 backdrop-blur-md">
-        <div className="flex h-[76px] items-stretch justify-between px-4 md:h-[92px] md:px-8 xl:px-12">
-          <div className="flex w-[220px] shrink-0 items-center text-left md:w-[320px] xl:w-[380px]">
-            <img
-              src="/image/yanfeng-logo-wordmark.png"
-              alt="檐枫动漫社"
-              className="h-12 w-auto max-w-full object-contain md:h-14 xl:h-16"
-            />
-            <span className="hidden h-14 w-14 items-center justify-center rounded-full border-2 border-white/70 bg-[#c8322a] shadow-[3px_3px_0_#000] md:h-16 md:w-16">
-              <span
-                className="h-10 w-10 bg-white md:h-12 md:w-12"
-                style={{
-                  maskImage: `url(${logo})`,
-                  WebkitMaskImage: `url(${logo})`,
-                  maskSize: 'contain',
-                  WebkitMaskSize: 'contain',
-                  maskRepeat: 'no-repeat',
-                  WebkitMaskRepeat: 'no-repeat',
-                  maskPosition: 'center',
-                  WebkitMaskPosition: 'center'
-                }}
-              />
-            </span>
-            <span className="hidden">
-              <span className="block text-2xl font-black leading-none tracking-[0.18em] text-white md:text-3xl">檐枫</span>
-              <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.28em] text-white/50 md:text-xs">YANFENG ACGN</span>
-            </span>
-          </div>
-
-          <nav className="hidden flex-1 items-stretch justify-center lg:flex">
-            {NAV_ITEMS.map((item) => {
-              const active = item.target === activeScreen;
-              const handleClick = () => showHomeSection(item.target);
-              return (
-                <button
-                  key={item.target}
-                  type="button"
-                  onClick={handleClick}
-                  className={`group flex min-w-[92px] flex-col items-center justify-center border-x border-white/[0.03] px-2 text-center transition hover:bg-white/[0.04] xl:min-w-[116px] 2xl:min-w-[136px] ${
-                    active ? 'text-[#c8322a]' : 'text-white/82 hover:text-white'
-                  }`}
-                >
-                  <span className="block text-[15px] font-black leading-none tracking-[0.05em] md:text-[18px] xl:text-[21px]">{item.labelEn}</span>
-                  <span className="mt-2 block text-[11px] font-black leading-none tracking-[0.1em] md:text-[13px]">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          <button
-            type="button"
-            onClick={() => showHomeSection('join')}
-            className="hidden w-[112px] shrink-0 flex-col items-center justify-center border-l border-white/10 bg-white/[0.03] text-white/75 transition hover:bg-[#c8322a] hover:text-white lg:flex xl:w-[136px]"
-          >
-            <UserPlus className="h-7 w-7 md:h-8 md:w-8" />
-            <span className="mt-2 text-[11px] font-black tracking-[0.18em]">JOIN</span>
-          </button>
-        </div>
-        <nav className="flex gap-2 overflow-x-auto border-t border-white/10 px-4 py-2 lg:hidden">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const handleClick = () => showHomeSection(item.target);
-            return (
-              <button
-                key={item.target}
-                type="button"
-                onClick={handleClick}
-                className="flex shrink-0 items-center gap-2 border border-white/10 bg-black/45 px-3 py-2 text-[11px] font-black tracking-[0.12em] text-white/75 transition hover:border-[#c8322a] hover:bg-[#c8322a] hover:text-white"
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </header>
+      <SiteHeader activeScreen={activeScreen} onNavigate={showHomeSection} />
 
       {activeMedia ? (
         <main ref={mediaPageRef} className="h-[100dvh] overflow-y-auto px-5 pb-20 pt-28 md:px-10">
@@ -1264,8 +428,12 @@ const App: React.FC = () => {
 
             {activeMediaEntry === 'videos' && <EventGallery currentTheme={AppTheme.DEFAULT} isEditMode={isEditMode} />}
             {activeMediaEntry === 'wechat' && <WechatArchive articles={WECHAT_ARTICLES} />}
-            {activeMediaEntry === 'gallery' && renderManagedImageArchive('gallery')}
-            {activeMediaEntry === 'vocaloid' && renderManagedImageArchive('album')}
+            {activeMediaEntry === 'gallery' && (
+              <ManagedImageArchive category="gallery" activeMedia={activeMedia} isEditMode={isEditMode} imageManager={imageManager} />
+            )}
+            {activeMediaEntry === 'vocaloid' && (
+              <ManagedImageArchive category="album" activeMedia={activeMedia} isEditMode={isEditMode} imageManager={imageManager} />
+            )}
           </div>
         </main>
       ) : (
@@ -1275,539 +443,99 @@ const App: React.FC = () => {
           onTouchEnd={handleTouchEnd}
           className="relative h-[100dvh] overflow-hidden"
         >
-        <div
-          className="relative z-10 h-full w-full overflow-hidden bg-[#080808]"
-          style={{
-            transform: footerVisible ? `translate3d(0, calc(-1 * ${SITE_FOOTER_HEIGHT}), 0)` : 'translate3d(0, 0, 0)',
-            transition: prefersReducedMotion() ? 'none' : 'transform 720ms cubic-bezier(0.55, 0, 0.18, 1)'
-          }}
-        >
-          <section
-            id="home"
-            data-active={activeScreen === 'home'}
-            data-state={getPanelState('home')}
-            style={getPanelStyle(0)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden pt-28 lg:pt-20"
+          <div
+            className="relative z-10 h-full w-full overflow-hidden bg-[#080808]"
+            style={{
+              transform: footerVisible ? `translate3d(0, calc(-1 * ${SITE_FOOTER_HEIGHT}), 0)` : 'translate3d(0, 0, 0)',
+              transition: prefersReducedMotion() ? 'none' : 'transform 720ms cubic-bezier(0.55, 0, 0.18, 1)'
+            }}
           >
-            <img src={HERO_IMAGE} alt="檐枫娘主视觉" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 42%' }} />
-            <div className="absolute inset-0 bg-black/35"></div>
-            <div className="absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,#080808_0%,rgba(8,8,8,.86)_34%,rgba(8,8,8,.45)_58%,rgba(8,8,8,.08)_100%)]"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-[linear-gradient(0deg,#080808_0%,rgba(8,8,8,0)_100%)]"></div>
+            <section
+              id="home"
+              data-active={activeScreen === 'home'}
+              data-state={getPanelState('home')}
+              style={getPanelStyle(0)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden pt-28 lg:pt-20"
+            >
+              <HomePage onNavigate={showHomeSection} />
+            </section>
 
-            <div className="relative z-10 mx-auto grid h-full max-w-[1600px] content-center px-5 py-8 md:px-10 lg:grid-cols-[0.95fr_1.05fr]">
-              <div className="max-w-3xl">
-                <p className="text-sm font-black tracking-[0.45em] text-[#c8322a] md:text-base">北京邮电大学 ACGN 爱好者的聚集地</p>
-                <h1 className="mt-4 text-[4.5rem] font-black leading-[0.86] tracking-[-0.06em] text-white md:text-[7rem] xl:text-[9rem]">
-                  檐枫
-                  <span className="block text-[#c8322a]">动漫社</span>
-                </h1>
-                <p className="mt-7 max-w-xl text-xl font-black leading-relaxed text-white md:text-2xl">
-                  看番、宅舞、wota艺、创作、唱歌、乐队，舞台剧，cosplay，术力口，包罗万象的二次元社团。
-                </p>
+            <section
+              id="about"
+              data-active={activeScreen === 'about'}
+              data-state={getPanelState('about')}
+              style={getSecondaryPanelStyle(1)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
+            >
+              <InfoPage />
+            </section>
 
-                <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => showHomeSection('about')}
-                    className="group flex items-center justify-center gap-3 bg-[#c8322a] px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1"
-                  >
-                    更多情报
-                    <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => showHomeSection('join')}
-                    className="flex items-center justify-center gap-3 border border-white/50 bg-black/55 px-7 py-4 text-sm font-black tracking-[0.18em] text-white shadow-[6px_6px_0_#000] transition hover:-translate-y-1 hover:border-white"
-                  >
-                    加入我们
-                    <Send className="h-5 w-5 text-[#c8322a]" />
-                  </button>
-                </div>
+            <section
+              id="groups"
+              data-active={activeScreen === 'groups'}
+              data-state={getPanelState('groups')}
+              style={getSecondaryPanelStyle(2)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 md:px-10"
+            >
+              <GroupsPage
+                selectedGroup={selectedGroup}
+                copiedGroupTitle={copiedGroupTitle}
+                onSelectGroup={setSelectedGroup}
+                onCopyGroup={copyGroupNumber}
+              />
+            </section>
+
+            <section
+              id="activities"
+              data-active={activeScreen === 'activities'}
+              data-state={getPanelState('activities')}
+              style={getSecondaryPanelStyle(3)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
+            >
+              <ActivitiesPage />
+            </section>
+
+            <section
+              id="media"
+              data-active={activeScreen === 'media'}
+              data-state={getPanelState('media')}
+              style={getSecondaryPanelStyle(4)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
+            >
+              <div className="h-full w-full">
+                <MediaHub onOpenEntry={openMediaEntry} />
               </div>
+            </section>
 
-              <div className="mt-12 flex items-end justify-start lg:mt-0 lg:justify-end">
-                <div className="w-full max-w-xl border-l-4 border-[#c8322a] bg-black/55 p-5 backdrop-blur-sm">
-                  <div className="grid grid-cols-2 gap-px bg-white/20 text-sm">
-                    {[
-                      ['超多活跃成员', '历年动漫社大群接近千人，轻松找到同好'],
-                      ['超多精彩活动', '百团大战，GMA，冬日庆典 / 社庆'],
-                      ['零门槛加入', '无社费无审核，零门槛加入'],
-                      ['自由参加', '自由参加喜欢的活动，无绑定无强制']
-                    ].map(([label, value]) => (
-                      <div key={label} className="min-h-[118px] bg-[#111] p-5">
-                        <p className="text-sm font-black leading-snug tracking-[0.08em] text-[#c8322a] md:text-base">{label}</p>
-                        <p className="mt-3 text-lg font-black leading-snug text-white md:text-xl">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-5 text-sm font-bold leading-relaxed text-white/70">
-                    这里首先是大家一起开心玩的地方。没有基础，浓度不高都没有关系，都欢迎加入。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
+            <section
+              id="join"
+              data-active={activeScreen === 'join'}
+              data-state={getPanelState('join')}
+              style={getPanelStyle(5)}
+              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] text-white"
+            >
+              <JoinPage
+                mainGroupNumber={mainGroupNumber}
+                joinGroupCopied={joinGroupCopied}
+                isEditMode={isEditMode}
+                onCopyJoinGroupNumber={siteSettings.copyJoinGroupNumber}
+                onOpenGroupEditor={siteSettings.openGroupEditor}
+              />
+            </section>
 
-          <section
-            id="about"
-            data-active={activeScreen === 'about'}
-            data-state={getPanelState('about')}
-            style={getSecondaryPanelStyle(1)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
-          >
-            <div className="pointer-events-none absolute inset-0 bg-black/48"></div>
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.04)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
-            <div className="pointer-events-none absolute left-0 top-24 h-px w-full bg-white/10"></div>
-            <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
-            <div className="pointer-events-none absolute left-[7%] top-0 h-full w-px bg-white/10"></div>
-            <div className="pointer-events-none absolute right-[11%] top-0 h-full w-px bg-[#c8322a]/18"></div>
-            <div className="pointer-events-none absolute bottom-[calc(13%+0.75rem)] left-8 text-[6rem] font-black leading-none tracking-[-0.08em] text-white/[0.025] md:text-[9rem]">
-              INFORMATION
-            </div>
-            <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
-
-            <div className="relative mx-auto grid h-full max-w-[1600px] gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-center xl:gap-10">
-              <div className="relative z-20 flex min-h-0 flex-col justify-center">
-                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">INFORMATION / 01</p>
-                <h2 className="mt-4 text-[4.15rem] font-black leading-[0.92] tracking-[-0.04em] text-white md:text-[6rem] xl:text-[8rem]">
-                  社团结构
-                  <span className="block text-[#c8322a]">入社指南</span>
-                </h2>
-                <p className="mt-6 max-w-xl text-base font-black leading-loose text-white/72 md:text-lg">
-                  入群即入社，按兴趣自由加入官方组或兴趣组。看番、宅舞、创作、唱歌、乐队、舞台剧和 cos，都能在这里找到同伴。
-                </p>
-                <div className="mt-8 grid max-w-xl grid-cols-3 gap-px bg-white/16">
-                  {[
-                    ['ENTRY', 'QQ 群入口'],
-                    ['GROUPS', '官方组 / 兴趣组'],
-                    ['STYLE', '自由参加']
-                  ].map(([label, value]) => (
-                    <div key={label} className="bg-[#111] px-4 py-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.02)]">
-                      <p className="text-[10px] font-black tracking-[0.22em] text-[#c8322a]">{label}</p>
-                      <p className="mt-2 text-sm font-black text-white md:text-base">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="relative z-10 min-h-[540px] lg:min-h-[600px]">
-                <a
-                  href="https://zh.moegirl.org.cn/%E6%AA%90%E6%9E%AB%E5%A8%98"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="檐枫娘萌娘百科"
-                  className="absolute -left-16 bottom-0 z-30 hidden w-[170px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-left-24 xl:w-[215px]"
-                >
-                  <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="w-full" />
-                </a>
-                <a
-                  href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="檐羽萌娘百科"
-                  className="absolute -right-12 bottom-3 z-30 hidden w-[155px] drop-shadow-[0_18px_28px_rgb(0_0_0/0.62)] transition hover:scale-[1.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#c8322a] md:block xl:-right-20 xl:w-[195px]"
-                >
-                  <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="w-full" />
-                </a>
-
-                <div
-                  className="relative z-20 flex h-full min-h-[540px] flex-col overflow-hidden bg-transparent px-7 py-9 shadow-[14px_14px_0_rgb(0_0_0/0.35)] md:px-12 md:py-14 lg:min-h-[600px]"
-                  style={{
-                    backgroundImage: `url(${BLACKBOARD_PANEL_IMAGE})`,
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '100% 100%'
-                  }}
-                >
-                  <div className="relative z-10 flex flex-1 flex-col justify-center px-4 py-4 md:px-8 md:py-8">
-                    <div className="mx-auto w-full max-w-3xl">
-                      <div className="mx-auto max-w-[380px] border border-[#c8322a]/75 bg-[#c8322a] px-6 py-5 text-center shadow-[6px_6px_0_rgb(0_0_0/0.35)]">
-                        <p className="text-[10px] font-black tracking-[0.3em] text-white/70">START / 01</p>
-                        <h4 className="mt-1 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">QQ 大群</h4>
-                        <p className="mt-2 text-xs font-bold text-white/76">水群、交友、了解动漫社，接收活动消息</p>
-                      </div>
-
-                      <div className="relative mx-auto h-20 max-w-[520px]">
-                        <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/24"></div>
-                        <div className="absolute left-[24%] right-[24%] top-[62%] h-px bg-white/24"></div>
-                        <div className="absolute left-[24%] top-[62%] h-[38%] w-px bg-white/24"></div>
-                        <div className="absolute right-[24%] top-[62%] h-[38%] w-px bg-white/24"></div>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <article className="relative min-h-[190px] overflow-hidden border border-[#7b3a2d]/50 bg-black/24 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">OFFICIAL</p>
-                              <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white">十大官方组</h4>
-                              <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">稳定组活、节目排练和大型晚会的主力。</p>
-                            </div>
-                          </div>
-                          <div className="mt-5 flex flex-wrap gap-2">
-                            {OFFICIAL_GROUPS.slice(0, 6).map((group) => (
-                              <span key={group.title} className="border border-[#7b3a2d]/60 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
-                                {group.title}
-                              </span>
-                            ))}
-                          </div>
-                        </article>
-
-                        <article className="relative min-h-[190px] overflow-hidden border border-[#7b3a2d]/50 bg-black/24 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">INTEREST</p>
-                              <h4 className="mt-2 text-3xl font-black tracking-[-0.04em] text-white">兴趣组</h4>
-                              <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">自由生长的同好空间。</p>
-                            </div>
-                          </div>
-                          <div className="mt-5 flex flex-wrap gap-2">
-                            {INTEREST_GROUPS.slice(0, 6).map((group) => (
-                              <span key={group} className="border border-[#7b3a2d]/60 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
-                                {group}
-                              </span>
-                            ))}
-                          </div>
-                        </article>
-                      </div>
-
-                      <div className="mt-5 border-l-4 border-[#c8322a] bg-black/42 px-4 py-3">
-                        <p className="text-sm font-black leading-relaxed text-white/75">
-                          入群即入社，是先坐下来认识大家。想活跃、想上台、想潜水看消息，都可以。
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-center gap-2 md:hidden">
-                      <a href="https://zh.moegirl.org.cn/%E6%AA%90%E6%9E%AB%E5%A8%98" target="_blank" rel="noreferrer" aria-label="檐枫娘萌娘百科">
-                        <img src="/image/yanfeng-chibi.png" alt="Q版檐枫娘" className="h-24 w-20 object-cover object-top" />
-                      </a>
-                      <a href="https://mzh.moegirl.org.cn/%E6%AA%90%E7%BE%BD" target="_blank" rel="noreferrer" aria-label="檐羽萌娘百科">
-                        <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="h-24 w-20 object-cover object-top" />
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section
-            id="groups"
-            data-active={activeScreen === 'groups'}
-            data-state={getPanelState('groups')}
-            style={getSecondaryPanelStyle(2)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 md:px-10"
-          >
-            <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
-              <div className="mb-7 flex flex-col gap-4 border-b border-white/15 pb-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
-                  <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">十大官方组</h2>
-                </div>
-                <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
-                  可以同时加入多个组，无加入限制，无强制绑定。
-                </p>
-              </div>
-
-              <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
-                <div className="grid gap-1 pr-1">
-                  {OFFICIAL_GROUPS.map((group, index) => {
-                    const Icon = group.icon;
-                    const active = index === selectedGroup;
-                    return (
-                      <button
-                        key={group.title}
-                        type="button"
-                        onClick={() => setSelectedGroup(index)}
-                        className={`flex items-center justify-between border px-4 py-3 text-left transition ${
-                          active ? 'border-[#c8322a] bg-[#c8322a] text-white' : 'border-white/10 bg-[#121212] text-white/65 hover:border-white/35 hover:text-white'
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <Icon className="h-5 w-5" />
-                          <span>
-                            <span className="block text-sm font-black">{group.title}</span>
-                            <span className="mt-0.5 block text-[10px] font-bold tracking-[0.22em] opacity-70">{group.label}</span>
-                          </span>
-                        </span>
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="relative overflow-hidden border border-white/10 bg-[#121212] p-7 md:p-10">
-                  <div className="absolute right-8 top-8 text-[7rem] font-black leading-none text-white/[0.03] md:text-[12rem]">{activeGroup.label}</div>
-                  <div className="relative z-10">
-                    <div className="mb-8">
-                      <div className="flex flex-wrap items-end gap-4">
-                        <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white md:h-20 md:w-20">
-                          <GroupIcon className="h-8 w-8 md:h-10 md:w-10" />
-                        </span>
-                        <div>
-                          <p className="text-xs font-black tracking-[0.4em] text-[#c8322a]">{activeGroup.label}</p>
-                          <h3 className="text-5xl font-black tracking-[-0.04em] text-white md:text-6xl">{activeGroup.title}</h3>
-                        </div>
-
-                        <div className="flex min-h-[72px] overflow-hidden bg-[#101010] text-white shadow-[4px_4px_0_rgb(0_0_0/0.28)]">
-                          <div className="flex flex-col justify-center border-l-4 border-[#c8322a] px-4 py-2">
-                            <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">QQ GROUP</p>
-                            <p className="mt-1 font-mono text-2xl font-black leading-none text-white/90 md:text-3xl">{activeGroup.qq}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => copyGroupNumber(activeGroup)}
-                            disabled={!activeGroupCanCopy}
-                            className={`group flex min-w-[132px] items-center justify-between gap-4 border-l border-black/35 px-4 text-left transition ${
-                              activeGroupCanCopy
-                                ? 'bg-[#c8322a] text-white hover:bg-white hover:text-[#c8322a]'
-                                : 'cursor-not-allowed bg-white/10 text-white/35'
-                            }`}
-                          >
-                            <span>
-                              <span className="block text-base font-black leading-none">{activeGroupCopied ? '已复制' : activeGroupCanCopy ? '复制群号' : '暂无群号'}</span>
-                              <span className="mt-1 block text-[10px] font-black leading-none tracking-[0.12em]">
-                                {activeGroupCopied ? 'COPIED' : activeGroupCanCopy ? 'COPY QQ' : 'NO DATA'}
-                              </span>
-                            </span>
-                            {activeGroupCopied ? (
-                              <Check className="h-5 w-5 shrink-0" />
-                            ) : (
-                              <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-2xl font-black leading-relaxed text-white md:text-4xl">{activeGroup.description}</p>
-                    <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed text-white/60">{activeGroup.newcomerNote}</p>
-
-                    <div className="mt-10 bg-black p-5">
-                      <p className="mb-4 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
-                      <div className="flex flex-wrap gap-2">
-                        {activeGroup.activities.map((activity) => (
-                          <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
-                            {activity}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-10 overflow-hidden border-y border-white/15 py-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-black tracking-[0.18em] text-[#c8322a]">兴趣组：</span>
-                  {INTEREST_GROUPS.map((group) => (
-                    <span key={group} className="bg-white px-4 py-2 text-xs font-black tracking-[0.14em] text-black">
-                      {group}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section
-            id="activities"
-            data-active={activeScreen === 'activities'}
-            data-state={getPanelState('activities')}
-            style={getSecondaryPanelStyle(3)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
-          >
-            <div className="pointer-events-none absolute inset-0 bg-black/46"></div>
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.036)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
-            <div className="pointer-events-none absolute left-0 top-24 h-px w-full bg-white/10"></div>
-            <div className="pointer-events-none absolute bottom-[13%] left-0 h-px w-full bg-white/10"></div>
-            <div className="pointer-events-none absolute -bottom-8 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.026] md:text-[12rem]">
-              EVENTS
-            </div>
-
-            <div className="relative mx-auto grid h-full max-w-[1600px] grid-rows-[1fr_1fr_1fr_auto] gap-3">
-              <div className="grid min-h-0 grid-cols-[0.48fr_1.52fr] gap-3 lg:grid-cols-[0.42fr_1.58fr]">
-                <article className="relative overflow-hidden border border-white/12 bg-[#111] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
-                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/12">01</div>
-                  <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ENTRY POINT</p>
-                  <h2 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">百团大战</h2>
-                  <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
-                    开学季，第一次和檐枫面对面。摊位，抽奖和精彩节目。
-                  </p>
-                </article>
-                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
-                  <img src="/image/activity-baifest.jpg" alt="百团大战活动现场" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.46),transparent_42%,rgba(200,50,42,0.1))]"></div>
-                  <span className="absolute bottom-4 right-4 border border-white/18 bg-black/55 px-3 py-2 text-xs font-black tracking-[0.18em] text-white/75">
-                    迎新 / 摊位 / 交流
-                  </span>
-                </figure>
-              </div>
-
-              <div className="grid min-h-0 grid-cols-[1.28fr_0.72fr] gap-3 lg:grid-cols-[1.26fr_0.74fr]">
-                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
-                  <img src="/image/activity-winter.jpeg" alt="冬日盛典合影" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.2),transparent_50%,rgba(0,0,0,0.55))]"></div>
-                </figure>
-                <article className="relative overflow-hidden border border-[#c8322a]/65 bg-[#c8322a] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
-                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/25">02</div>
-                  <p className="text-[10px] font-black tracking-[0.34em] text-white/65">TERM FINALE</p>
-                  <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">冬日盛典</h3>
-                  <p className="mt-4 text-sm font-bold leading-relaxed text-white/78">
-                    第一学期末的大型晚会，和檐枫一起留下第一次对大型晚会的记忆。
-                  </p>
-                </article>
-              </div>
-
-              <div className="grid min-h-0 grid-cols-[0.48fr_1.52fr] gap-3 lg:grid-cols-[0.42fr_1.58fr]">
-                <article className="relative overflow-hidden border border-white/12 bg-[#111] p-5 text-white shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
-                  <div className="pointer-events-none absolute right-4 top-4 text-5xl font-black leading-none text-white/12">03</div>
-                  <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ANNIVERSARY</p>
-                  <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">社庆</h3>
-                  <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
-                    第二学期末的周年庆典，社庆结束，回望和檐枫一起经历的一整年。
-                  </p>
-                </article>
-                <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
-                  <img src="/image/activity-anniversary.jpeg" alt="社庆活动合影" className="h-full min-h-[96px] w-full object-cover md:min-h-[160px]" />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.45),transparent_48%,rgba(200,50,42,0.1))]"></div>
-                </figure>
-              </div>
-
-              <div className="relative overflow-hidden border-y border-white/15 bg-black/45 px-4 py-3">
-                <div className="flex flex-wrap items-center gap-2 md:gap-3">
-                  <span className="text-[10px] font-black tracking-[0.3em] text-[#c8322a]">DAILY EVENTS</span>
-                  {['放映会', '组活', '轻音 Live', '合宿', '联合观影', '更多日常活动'].map((event) => (
-                    <span key={event} className="border border-white/14 bg-[#111] px-3 py-1.5 text-xs font-black text-white/72">
-                      {event}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section
-            id="media"
-            data-active={activeScreen === 'media'}
-            data-state={getPanelState('media')}
-            style={getSecondaryPanelStyle(4)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
-          >
-            <div className="h-full w-full">
-              <MediaHub onOpenEntry={openMediaEntry} />
-            </div>
-          </section>
-
-          <section
-            id="join"
-            data-active={activeScreen === 'join'}
-            data-state={getPanelState('join')}
-            style={getPanelStyle(5)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] text-white"
-          >
-            <img src={JOIN_IMAGE} alt="檐枫社庆视觉图" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 48%' }} />
-            <div className="absolute inset-0 bg-black/50"></div>
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.5)_36%,rgba(0,0,0,0.18)_62%,rgba(0,0,0,0.48)_100%)]"></div>
-            <div className="absolute bottom-0 left-0 right-0 h-44 bg-[linear-gradient(0deg,#080808_0%,rgba(8,8,8,0)_100%)]"></div>
-
-            <div className="relative z-10 mx-auto flex h-full max-w-[1600px] flex-col justify-center px-8 pb-16 pt-28 md:px-14 xl:px-20">
-              <div className="max-w-5xl">
-                <p className="font-mono text-sm uppercase tracking-[0.42em] text-white/68 md:text-base">WELCOME TO YANFENG</p>
-                <h2 className="mt-7 text-6xl font-black leading-[0.92] tracking-[-0.04em] text-white md:text-8xl xl:text-[9rem]">
-                  欢迎加入
-                  <span className="mt-3 block text-[#c8322a]">檐枫动漫社</span>
-                </h2>
-                <p className="mt-8 font-mono text-2xl tracking-[0.12em] text-white/78 md:text-4xl">
-                  大好きだよ、みんな！
-                </p>
-              </div>
-
-              <div className="mt-12 grid max-w-4xl gap-6 md:grid-cols-[auto_1fr] md:items-end">
-                <div>
-                  <p className="font-mono text-xs uppercase tracking-[0.34em] text-white/56">QQ GROUP</p>
-                  <p className="mt-2 font-mono text-5xl font-black tracking-[0.08em] text-white md:text-7xl">{mainGroupNumber}</p>
-                </div>
-                <div className="flex flex-wrap items-end gap-3">
-                  <button
-                    type="button"
-                    onClick={copyJoinGroupNumber}
-                    className="group flex w-fit min-w-[220px] items-center justify-between gap-5 border border-white/22 bg-white/10 px-5 py-4 text-left text-white backdrop-blur-sm transition hover:border-[#c8322a] hover:bg-[#c8322a]"
-                  >
-                    <span>
-                      <span className="block text-lg font-black leading-none">{joinGroupCopied ? '已复制群号' : '复制群号'}</span>
-                      <span className="mt-2 block font-mono text-[10px] font-black leading-none tracking-[0.22em] text-white/58 group-hover:text-white/80">
-                        {joinGroupCopied ? 'COPIED' : 'COPY QQ GROUP'}
-                      </span>
-                    </span>
-                    {joinGroupCopied ? <Check className="h-5 w-5 shrink-0" /> : <Copy className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />}
-                  </button>
-                  {isEditMode && (
-                    <button
-                      type="button"
-                      onClick={openGroupEditor}
-                      className="flex items-center gap-2 border border-[#c8322a] bg-black/48 px-4 py-3 text-sm font-black text-white backdrop-blur-sm transition hover:bg-[#c8322a]"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                      修改群号
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-          </section>
-
-          {!footerVisible && <ScrollGuide currentIndex={activeScreenIndex} total={SCREEN_IDS.length} />}
-        </div>
-        <footer
-          className="absolute bottom-0 left-0 right-0 z-0 overflow-hidden bg-[#202421] text-white"
-          style={{ height: SITE_FOOTER_HEIGHT }}
-        >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/35"></div>
-          <div className="pointer-events-none absolute left-0 top-0 h-28 w-full bg-[linear-gradient(180deg,rgba(0,0,0,0.5),transparent)]"></div>
-          <div className="mx-auto grid h-full max-w-[1500px] grid-cols-[0.75fr_1.25fr] items-center gap-12 px-10 py-10">
-            <div className="flex flex-col gap-6">
-              <img src="/image/yanfeng-logo-wordmark.png" alt="檐枫动漫社" className="h-16 w-fit max-w-full object-contain opacity-95" />
-              <div className="flex w-fit items-center gap-3 bg-black/22 px-4 py-3">
-                <img
-                  src="/image/向日葵.png"
-                  alt="向日葵"
-                  draggable={false}
-                  onDoubleClick={handleSunflowerAdminAccess}
-                  className="h-14 w-14 cursor-pointer select-none object-cover"
-                />
-                <span>
-                  <span className="block text-[10px] font-black tracking-[0.22em] text-[#c8322a]">SITE BUILDER</span>
-                  <span className="mt-1 block text-lg font-black tracking-[0.08em] text-white">向日葵</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-5 text-sm font-bold leading-relaxed text-white/48">
-              <div className="grid gap-x-10 gap-y-2 sm:grid-cols-2">
-                <p>QQ群 {mainGroupNumber}</p>
-                <p>Bilibili 檐枫动漫社</p>
-                <p>公众号 涧桐现视研</p>
-                <p>北京邮电大学 ACGN 爱好者的聚集地</p>
-              </div>
-              <p>部分视觉素材由檐枫动漫社创作组成员提供，感谢各位的创作。</p>
-              <div className="h-px bg-white/16"></div>
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <p>Copyright © YANFENG ACGN FAN CLUB. Site under construction.</p>
-                <button type="button" onClick={() => setFooterVisible(false)} className="text-xs font-black tracking-[0.18em] text-white/72 transition hover:text-[#c8322a]">
-                  BACK TO PAGE
-                </button>
-              </div>
-            </div>
+            {!footerVisible && <ScrollGuide currentIndex={activeScreenIndex} total={SCREEN_IDS.length} />}
           </div>
-        </footer>
-      </main>
+
+          <SiteFooter
+            height={SITE_FOOTER_HEIGHT}
+            mainGroupNumber={mainGroupNumber}
+            onSunflowerDoubleClick={editMode.openAdminAccess}
+            onBackToPage={() => setFooterVisible(false)}
+          />
+        </main>
       )}
-      <audio
-        ref={radioAudioRef}
-        src="/music/bgm.mp3"
-        preload="auto"
-        loop
-      />
+
+      <audio ref={radioAudioRef} src="/music/bgm.mp3" preload="auto" loop />
     </div>
   );
 };

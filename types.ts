@@ -1,8 +1,37 @@
+import type { ElementType } from 'react';
+
 export enum AppTheme {
   DEFAULT = 'default',
   WINTER = 'winter',
   GMA = 'gma',
   ANNIVERSARY = 'anniversary'
+}
+
+export type AnchorId = 'home' | 'about' | 'groups' | 'activities' | 'media' | 'join';
+
+export interface NavItem {
+  label: string;
+  labelEn: string;
+  target: AnchorId;
+  icon: ElementType;
+}
+
+export interface OfficialGroup {
+  title: string;
+  label: string;
+  qq: string;
+  description: string;
+  newcomerNote: string;
+  activities: string[];
+  icon: ElementType;
+}
+
+export interface ActivityItem {
+  title: string;
+  kicker: string;
+  description: string;
+  details: string[];
+  icon: ElementType;
 }
 
 export interface NewsItem {

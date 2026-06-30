@@ -1,0 +1,132 @@
+import React from 'react';
+import { ArrowRight, Check, ChevronRight } from 'lucide-react';
+import { INTEREST_GROUPS, OFFICIAL_GROUPS } from '../data/siteContent';
+import type { OfficialGroup } from '../types';
+
+interface GroupsPageProps {
+  selectedGroup: number;
+  copiedGroupTitle: string | null;
+  onSelectGroup: (index: number) => void;
+  onCopyGroup: (group: OfficialGroup) => void | Promise<void>;
+}
+
+const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle, onSelectGroup, onCopyGroup }) => {
+  const activeGroup = OFFICIAL_GROUPS[selectedGroup] || OFFICIAL_GROUPS[0];
+  const GroupIcon = activeGroup.icon;
+  const activeGroupCanCopy = activeGroup.qq.trim() !== '' && activeGroup.qq !== '待补充';
+  const activeGroupCopied = copiedGroupTitle === activeGroup.title;
+
+  return (
+    <div className="mx-auto flex h-full max-w-[1600px] flex-col justify-center">
+      <div className="mb-7 flex flex-col gap-4 border-b border-white/15 pb-6 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">GROUPS / 02</p>
+          <h2 className="mt-3 text-5xl font-black tracking-[-0.05em] text-white md:text-7xl">十大官方组</h2>
+        </div>
+        <p className="max-w-2xl text-sm font-bold leading-relaxed text-white/60">
+          可以同时加入多个组，无加入限制，无强制绑定。
+        </p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
+        <div className="grid gap-1 pr-1">
+          {OFFICIAL_GROUPS.map((group, index) => {
+            const Icon = group.icon;
+            const active = index === selectedGroup;
+            return (
+              <button
+                key={group.title}
+                type="button"
+                onClick={() => onSelectGroup(index)}
+                className={`flex items-center justify-between border px-4 py-3 text-left transition ${
+                  active ? 'border-[#c8322a] bg-[#c8322a] text-white' : 'border-white/10 bg-[#121212] text-white/65 hover:border-white/35 hover:text-white'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Icon className="h-5 w-5" />
+                  <span>
+                    <span className="block text-sm font-black">{group.title}</span>
+                    <span className="mt-0.5 block text-[10px] font-bold tracking-[0.22em] opacity-70">{group.label}</span>
+                  </span>
+                </span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative overflow-hidden border border-white/10 bg-[#121212] p-7 md:p-10">
+          <div className="absolute right-8 top-8 text-[7rem] font-black leading-none text-white/[0.03] md:text-[12rem]">{activeGroup.label}</div>
+          <div className="relative z-10">
+            <div className="mb-8">
+              <div className="flex flex-wrap items-end gap-4">
+                <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white md:h-20 md:w-20">
+                  <GroupIcon className="h-8 w-8 md:h-10 md:w-10" />
+                </span>
+                <div>
+                  <p className="text-xs font-black tracking-[0.4em] text-[#c8322a]">{activeGroup.label}</p>
+                  <h3 className="text-5xl font-black tracking-[-0.04em] text-white md:text-6xl">{activeGroup.title}</h3>
+                </div>
+
+                <div className="flex min-h-[72px] overflow-hidden bg-[#101010] text-white shadow-[4px_4px_0_rgb(0_0_0/0.28)]">
+                  <div className="flex flex-col justify-center border-l-4 border-[#c8322a] px-4 py-2">
+                    <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">QQ GROUP</p>
+                    <p className="mt-1 font-mono text-2xl font-black leading-none text-white/90 md:text-3xl">{activeGroup.qq}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void onCopyGroup(activeGroup)}
+                    disabled={!activeGroupCanCopy}
+                    className={`group flex min-w-[132px] items-center justify-between gap-4 border-l border-black/35 px-4 text-left transition ${
+                      activeGroupCanCopy
+                        ? 'bg-[#c8322a] text-white hover:bg-white hover:text-[#c8322a]'
+                        : 'cursor-not-allowed bg-white/10 text-white/35'
+                    }`}
+                  >
+                    <span>
+                      <span className="block text-base font-black leading-none">{activeGroupCopied ? '已复制' : activeGroupCanCopy ? '复制群号' : '暂无群号'}</span>
+                      <span className="mt-1 block text-[10px] font-black leading-none tracking-[0.12em]">
+                        {activeGroupCopied ? 'COPIED' : activeGroupCanCopy ? 'COPY QQ' : 'NO DATA'}
+                      </span>
+                    </span>
+                    {activeGroupCopied ? (
+                      <Check className="h-5 w-5 shrink-0" />
+                    ) : (
+                      <ArrowRight className="h-5 w-5 shrink-0 transition-transform group-hover:translate-x-1" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-2xl font-black leading-relaxed text-white md:text-4xl">{activeGroup.description}</p>
+            <p className="mt-6 max-w-3xl text-base font-bold leading-relaxed text-white/60">{activeGroup.newcomerNote}</p>
+
+            <div className="mt-10 bg-black p-5">
+              <p className="mb-4 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
+              <div className="flex flex-wrap gap-2">
+                {activeGroup.activities.map((activity) => (
+                  <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
+                    {activity}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10 overflow-hidden border-y border-white/15 py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-black tracking-[0.18em] text-[#c8322a]">兴趣组：</span>
+          {INTEREST_GROUPS.map((group) => (
+            <span key={group} className="bg-white px-4 py-2 text-xs font-black tracking-[0.14em] text-black">
+              {group}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GroupsPage;

@@ -91,37 +91,46 @@ const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
       <div className="pointer-events-none absolute bottom-[14%] left-0 h-px w-full bg-white/12"></div>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(200,50,42,0.16),transparent_32%),linear-gradient(90deg,rgba(0,0,0,0.78),rgba(0,0,0,0.2)_36%,rgba(0,0,0,0.12)_72%,rgba(0,0,0,0.58))]"></div>
 
-      <div className="absolute bottom-[24%] left-[7%] z-20 hidden w-[250px] text-white lg:block">
-        <h2 className="text-5xl font-black leading-[0.96] tracking-[-0.04em] xl:text-6xl">
-          檐枫
-          <span className="block">万象</span>
-        </h2>
-        <div className="mt-5 h-2 w-40 bg-[#c8322a]"></div>
-        <p className="mt-10 text-sm font-black leading-relaxed text-white/78">
-          请选择想要查看的内容
-        </p>
-        <div className="mt-6 h-px w-40 bg-white/45"></div>
-      </div>
+      <div className="absolute left-[7%] top-[16%] z-20 hidden w-[430px] text-white lg:block">
+        <div className="pointer-events-none absolute -inset-x-10 -inset-y-12 bg-[radial-gradient(circle,rgba(255,255,255,0.16)_1px,transparent_1.5px)] opacity-35 [background-size:15px_15px]"></div>
+        <div className="pointer-events-none absolute -left-10 top-8 h-px w-[520px] bg-white/14"></div>
+        <div className="pointer-events-none absolute -left-10 top-8 h-[300px] w-px bg-white/10"></div>
+        <div className="relative">
+          <p className="font-mono text-5xl font-black uppercase leading-none tracking-[0.02em] text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.45)] xl:text-6xl">
+            ABOUT MEDIA
+          </p>
+          <h2 className="mt-3 text-6xl font-black leading-[0.94] tracking-[-0.05em] text-white drop-shadow-[0_5px_16px_rgba(0,0,0,0.55)] xl:text-7xl">
+            檐枫万象
+          </h2>
+          <div className="mt-7 h-2.5 w-[300px] bg-[#c8322a] shadow-[0_0_28px_rgba(200,50,42,0.42)]"></div>
 
-      <div className="absolute left-[7%] top-[14%] z-20 hidden w-[220px] text-white lg:block">
-        <p className="text-2xl font-black tracking-[-0.04em]">MEDIA ARCHIVE</p>
-        <div className="mt-5 grid gap-3">
-          {MEDIA_ENTRIES.map((entry) => {
-            const Icon = entry.icon;
-            return (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => onOpenEntry(entry.id)}
-                className="group flex items-center gap-3 text-left text-white/52 transition hover:text-white"
-              >
-                <span className="flex h-4 w-4 items-center justify-center border border-white/35 transition group-hover:border-[#c8322a] group-hover:bg-[#c8322a]">
-                  <Icon className="h-2.5 w-2.5 opacity-0 transition group-hover:opacity-100" strokeWidth={3} />
-                </span>
-                <span className="text-sm font-black tracking-[0.08em]">{entry.label}</span>
-              </button>
-            );
-          })}
+          <div className="mt-14">
+            <p className="text-base font-black leading-relaxed text-white/86">请选择您要查看的内容</p>
+            <p className="mt-3 font-mono text-base font-black uppercase tracking-[0.03em] text-white/90">
+              YANFENG ACGN / MEDIA ARCHIVE
+            </p>
+            <div className="mt-7 h-px w-[310px] bg-white/48"></div>
+          </div>
+
+          <div className="mt-6 grid w-[330px] gap-2">
+            {MEDIA_ENTRIES.map((entry) => {
+              const Icon = entry.icon;
+              return (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => onOpenEntry(entry.id)}
+                  className="group flex items-center justify-between border-l-4 border-white/30 bg-black/24 px-4 py-2.5 text-left text-white/62 backdrop-blur-[2px] transition hover:border-[#c8322a] hover:bg-[#c8322a]/18 hover:text-white"
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4 text-[#c8322a] transition group-hover:text-white" strokeWidth={2.8} />
+                    <span className="text-sm font-black tracking-[0.12em]">{entry.label}</span>
+                  </span>
+                  <span className="font-mono text-xs font-black text-white/32 transition group-hover:text-white/72">VIEW</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
