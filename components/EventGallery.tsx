@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Film, Link as LinkIcon, Image as ImageIcon, Plus, Trash2, Search, Filter } from 'lucide-react';
+import { Play, Film, Link as LinkIcon, Image as ImageIcon, Trash2, Search, Filter } from 'lucide-react';
 import { VideoContent, AppTheme, VideoCategory } from '../types';
 import RetroCard from './RetroCard';
 
@@ -143,13 +143,6 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
               <h2 className="text-4xl font-retro text-[var(--theme-primary)]">活动录像</h2>
               <p className={`${currentTheme === AppTheme.GMA ? 'text-black' : 'text-[var(--theme-accent)]'} mt-2 font-bold`}>SHOWCASE & MEMORIES</p>
            </div>
-           
-           <button 
-             onClick={() => setShowForm(!showForm)}
-             className="bg-[var(--theme-primary)] text-white px-6 py-3 rounded-full border-4 border-[var(--theme-border)] shadow-[4px_4px_0px_var(--theme-border)] hover:translate-y-1 hover:shadow-[2px_2px_0px_var(--theme-border)] transition-all flex items-center gap-2 font-bold"
-           >
-             {showForm ? '取消添加' : <><Plus size={20} /> 添加 Bilibili 视频</>}
-           </button>
         </div>
 
         {/* Navigation & Search Bar Container */}

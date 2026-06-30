@@ -57,6 +57,9 @@ interface ActivityItem {
 
 const HERO_IMAGE = '/image/yanfeng-hero.jpg';
 const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.png';
+const BLACKBOARD_PANEL_IMAGE = '/image/blackboard-panel.png';
+const JOIN_IMAGE = '/image/join-2025-anniversary.png';
+const JOIN_GROUP_NUMBER = '737508445';
 
 const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React.ElementType }[] = [
   { label: '首页', labelEn: 'INDEX', target: 'home', icon: Home },
@@ -68,6 +71,7 @@ const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React
 ];
 
 const SCREEN_IDS: AnchorId[] = ['home', 'about', 'groups', 'activities', 'media', 'join'];
+const SITE_FOOTER_HEIGHT = 'clamp(300px, 38dvh, 420px)';
 const PAGE_TRANSITION_MS = 1180;
 const PAGE_TRANSITION_EASE = 'cubic-bezier(0.68, 0.02, 0.88, 0.58)';
 const SCROLL_GUIDE_DOTS = Array.from({ length: 28 }, (_, index) => index);
@@ -254,12 +258,15 @@ const App: React.FC = () => {
   const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [copiedGroupTitle, setCopiedGroupTitle] = useState<string | null>(null);
+  const [joinGroupCopied, setJoinGroupCopied] = useState(false);
   const [activeScreen, setActiveScreen] = useState<AnchorId>('home');
   const [activeMediaEntry, setActiveMediaEntry] = useState<MediaContentId | null>(null);
   const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
   const [transitionDirection, setTransitionDirection] = useState(0);
   const activeScreenRef = useRef<AnchorId>('home');
   const activeMediaEntryRef = useRef<MediaContentId | null>(null);
+  const [footerVisible, setFooterVisible] = useState(false);
+  const footerVisibleRef = useRef(false);
   const mediaPageRef = useRef<HTMLElement | null>(null);
   const radioAudioRef = useRef<HTMLAudioElement | null>(null);
   const radioAutoPlayCleanupRef = useRef<(() => void) | null>(null);
@@ -277,6 +284,10 @@ const App: React.FC = () => {
   useEffect(() => {
     activeScreenRef.current = activeScreen;
   }, [activeScreen]);
+
+  useEffect(() => {
+    footerVisibleRef.current = footerVisible;
+  }, [footerVisible]);
 
   useEffect(() => {
     activeMediaEntryRef.current = activeMediaEntry;
@@ -368,6 +379,7 @@ const App: React.FC = () => {
     const targetIndex = SCREEN_IDS.indexOf(target);
 
     transitionLockRef.current = true;
+    setFooterVisible(false);
     setOutgoingScreen(current);
     setTransitionDirection(targetIndex > currentIndex ? 1 : -1);
     setActiveScreen(target);
@@ -412,6 +424,28 @@ const App: React.FC = () => {
     }
   };
 
+  const copyJoinGroupNumber = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(JOIN_GROUP_NUMBER);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = JOIN_GROUP_NUMBER;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setJoinGroupCopied(true);
+      window.setTimeout(() => setJoinGroupCopied(false), 1600);
+    } catch (error) {
+      console.error('Failed to copy join group number:', error);
+    }
+  };
+
   const openMediaEntry = (entry: MediaContentId) => {
     setActiveMediaEntry(entry);
   };
@@ -432,8 +466,34 @@ const App: React.FC = () => {
       return;
     }
 
-    const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
+    const currentScreen = activeScreenRef.current;
+    const currentIndex = SCREEN_IDS.indexOf(currentScreen);
     const direction = wheelIntent > 0 ? 1 : -1;
+
+    if (currentScreen === 'join' && direction > 0) {
+      event.preventDefault();
+      if (!footerVisibleRef.current) {
+        setFooterVisible(true);
+      }
+      wheelLockRef.current = true;
+      window.setTimeout(() => {
+        wheelLockRef.current = false;
+      }, prefersReducedMotion() ? 120 : 620);
+      return;
+    }
+
+    if (footerVisibleRef.current) {
+      event.preventDefault();
+      if (direction < 0) {
+        setFooterVisible(false);
+      }
+      wheelLockRef.current = true;
+      window.setTimeout(() => {
+        wheelLockRef.current = false;
+      }, prefersReducedMotion() ? 120 : 620);
+      return;
+    }
+
     const nextIndex = Math.min(Math.max(currentIndex + direction, 0), SCREEN_IDS.length - 1);
 
     if (nextIndex === currentIndex) return;
@@ -453,11 +513,32 @@ const App: React.FC = () => {
         return;
       }
 
-      const currentIndex = SCREEN_IDS.indexOf(activeScreenRef.current);
+      const currentScreen = activeScreenRef.current;
+      const wantsNext = event.key === 'ArrowRight' || event.key === 'PageDown';
+      const wantsPrevious = event.key === 'ArrowLeft' || event.key === 'PageUp';
+
+      if (footerVisibleRef.current && wantsPrevious) {
+        event.preventDefault();
+        setFooterVisible(false);
+        return;
+      }
+
+      if (currentScreen === 'join' && wantsNext) {
+        event.preventDefault();
+        setFooterVisible(true);
+        return;
+      }
+
+      if (footerVisibleRef.current && wantsNext) {
+        event.preventDefault();
+        return;
+      }
+
+      const currentIndex = SCREEN_IDS.indexOf(currentScreen);
       const nextIndex =
-        event.key === 'ArrowRight' || event.key === 'PageDown'
+        wantsNext
           ? Math.min(currentIndex + 1, SCREEN_IDS.length - 1)
-          : event.key === 'ArrowLeft' || event.key === 'PageUp'
+        : wantsPrevious
             ? Math.max(currentIndex - 1, 0)
             : currentIndex;
 
@@ -702,7 +783,13 @@ const App: React.FC = () => {
           onTouchEnd={handleTouchEnd}
           className="relative h-[100dvh] overflow-hidden"
         >
-        <div className="relative h-full w-full overflow-hidden">
+        <div
+          className="relative z-10 h-full w-full overflow-hidden bg-[#080808]"
+          style={{
+            transform: footerVisible ? `translate3d(0, calc(-1 * ${SITE_FOOTER_HEIGHT}), 0)` : 'translate3d(0, 0, 0)',
+            transition: prefersReducedMotion() ? 'none' : 'transform 720ms cubic-bezier(0.55, 0, 0.18, 1)'
+          }}
+        >
           <section
             id="home"
             data-active={activeScreen === 'home'}
@@ -831,14 +918,16 @@ const App: React.FC = () => {
                   <img src="/image/yanyu-chibi.png" alt="Q版檐羽" className="w-full" />
                 </a>
 
-                <div className="relative z-20 flex h-full min-h-[540px] flex-col overflow-hidden border-[10px] border-[#211713] bg-[#0b0b0b] shadow-[14px_14px_0_rgb(0_0_0/0.35)] lg:min-h-[600px]">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-45 [background-size:auto,84px_84px,84px_84px]"></div>
-                  <div className="pointer-events-none absolute inset-3 border border-white/8"></div>
-                  <div className="pointer-events-none absolute right-8 top-5 text-[6rem] font-black leading-none tracking-[-0.08em] text-white/[0.025] md:text-[8rem]">
-                    BOARD
-                  </div>
-
-                  <div className="relative z-10 flex flex-1 flex-col justify-center px-5 py-7 md:px-10 md:py-10">
+                <div
+                  className="relative z-20 flex h-full min-h-[540px] flex-col overflow-hidden bg-transparent px-7 py-9 shadow-[14px_14px_0_rgb(0_0_0/0.35)] md:px-12 md:py-14 lg:min-h-[600px]"
+                  style={{
+                    backgroundImage: `url(${BLACKBOARD_PANEL_IMAGE})`,
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '100% 100%'
+                  }}
+                >
+                  <div className="relative z-10 flex flex-1 flex-col justify-center px-4 py-4 md:px-8 md:py-8">
                     <div className="mx-auto w-full max-w-3xl">
                       <div className="mx-auto max-w-[380px] border border-[#c8322a]/75 bg-[#c8322a] px-6 py-5 text-center shadow-[6px_6px_0_rgb(0_0_0/0.35)]">
                         <p className="text-[10px] font-black tracking-[0.3em] text-white/70">START / 01</p>
@@ -854,7 +943,7 @@ const App: React.FC = () => {
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2">
-                        <article className="relative min-h-[190px] overflow-hidden border border-white/14 bg-[#111]/92 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                        <article className="relative min-h-[190px] overflow-hidden border border-[#7b3a2d]/50 bg-black/24 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">OFFICIAL</p>
@@ -864,14 +953,14 @@ const App: React.FC = () => {
                           </div>
                           <div className="mt-5 flex flex-wrap gap-2">
                             {OFFICIAL_GROUPS.slice(0, 6).map((group) => (
-                              <span key={group.title} className="border border-white/12 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
+                              <span key={group.title} className="border border-[#7b3a2d]/60 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
                                 {group.title}
                               </span>
                             ))}
                           </div>
                         </article>
 
-                        <article className="relative min-h-[190px] overflow-hidden border border-white/14 bg-[#111]/92 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
+                        <article className="relative min-h-[190px] overflow-hidden border border-[#7b3a2d]/50 bg-black/24 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
                           <div className="flex items-start justify-between gap-4">
                             <div>
                               <p className="text-[10px] font-black tracking-[0.28em] text-[#c8322a]">INTEREST</p>
@@ -881,7 +970,7 @@ const App: React.FC = () => {
                           </div>
                           <div className="mt-5 flex flex-wrap gap-2">
                             {INTEREST_GROUPS.slice(0, 6).map((group) => (
-                              <span key={group} className="border border-white/12 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
+                              <span key={group} className="border border-[#7b3a2d]/60 bg-black/35 px-2.5 py-1.5 text-[11px] font-black text-white/72">
                                 {group}
                               </span>
                             ))}
@@ -1049,7 +1138,7 @@ const App: React.FC = () => {
                   <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ENTRY POINT</p>
                   <h2 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">百团大战</h2>
                   <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
-                    开学季的摊位入口，第一次和檐枫面对面。
+                    开学季，第一次和檐枫面对面。摊位，抽奖和精彩节目。
                   </p>
                 </article>
                 <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
@@ -1071,7 +1160,7 @@ const App: React.FC = () => {
                   <p className="text-[10px] font-black tracking-[0.34em] text-white/65">TERM FINALE</p>
                   <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">冬日盛典</h3>
                   <p className="mt-4 text-sm font-bold leading-relaxed text-white/78">
-                    第一学期末的大型晚会，节目、舞台和回忆一起落地。
+                    第一学期末的大型晚会，和檐枫一起留下第一次对大型晚会的记忆。
                   </p>
                 </article>
               </div>
@@ -1082,7 +1171,7 @@ const App: React.FC = () => {
                   <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ANNIVERSARY</p>
                   <h3 className="mt-3 text-2xl font-black leading-none tracking-[-0.04em] md:text-4xl xl:text-5xl">社庆</h3>
                   <p className="mt-4 max-w-md text-sm font-bold leading-relaxed text-white/64">
-                    第二学期末的周年庆典，属于檐枫自己的大合照。
+                    第二学期末的周年庆典，社庆结束，回望和檐枫一起经历的一整年。
                   </p>
                 </article>
                 <figure className="relative min-h-0 overflow-hidden border border-white/12 bg-black shadow-[6px_6px_0_rgb(0_0_0/0.28)]">
@@ -1120,112 +1209,87 @@ const App: React.FC = () => {
             id="join"
             data-active={activeScreen === 'join'}
             data-state={getPanelState('join')}
-            style={getSecondaryPanelStyle(5)}
-            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 py-24 text-white md:px-10"
+            style={getPanelStyle(5)}
+            className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] text-white"
           >
-            <div className="pointer-events-none absolute inset-0 bg-black/50"></div>
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.052)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.038)_1px,transparent_1px)] opacity-34 [background-size:160px_160px]"></div>
-            <div className="pointer-events-none absolute left-[22px] top-0 h-full w-px bg-white/12"></div>
-            <div className="pointer-events-none absolute bottom-[14%] left-0 h-px w-full bg-white/12"></div>
-            <div className="pointer-events-none absolute right-[12%] top-0 h-full w-px bg-white/10"></div>
-            <div className="pointer-events-none absolute -bottom-10 left-8 text-[7rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[12rem]">
-              JOIN US
-            </div>
-            <div className="pointer-events-none absolute right-10 top-28 h-28 w-28 border-r-2 border-t-2 border-[#c8322a]/35"></div>
+            <img src={JOIN_IMAGE} alt="檐枫社庆视觉图" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 48%' }} />
+            <div className="absolute inset-0 bg-black/50"></div>
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.5)_36%,rgba(0,0,0,0.18)_62%,rgba(0,0,0,0.48)_100%)]"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-44 bg-[linear-gradient(0deg,#080808_0%,rgba(8,8,8,0)_100%)]"></div>
 
-            <div className="relative mx-auto grid h-full max-w-[1600px] gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
-              <div className="max-w-4xl pl-3 md:pl-7">
-                <p className="text-xs font-black tracking-[0.45em] text-[#c8322a]">JOIN / 05</p>
-                <h2 className="mt-4 text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl xl:text-8xl">
-                  加入檐枫以后，
-                  <span className="block text-[#c8322a]">你可以怎样度过大学生活？</span>
+            <div className="relative z-10 mx-auto flex h-full max-w-[1600px] flex-col justify-center px-8 pb-16 pt-28 md:px-14 xl:px-20">
+              <div className="max-w-5xl">
+                <p className="font-mono text-sm uppercase tracking-[0.42em] text-white/68 md:text-base">WELCOME TO YANFENG</p>
+                <h2 className="mt-7 text-6xl font-black leading-[0.92] tracking-[-0.04em] text-white md:text-8xl xl:text-[9rem]">
+                  欢迎加入
+                  <span className="mt-3 block text-[#c8322a]">檐枫动漫社</span>
                 </h2>
-                <p className="mt-7 max-w-3xl text-base font-black leading-loose text-white/78 md:text-lg xl:text-xl">
-                  先从 QQ 大群认识大家，再去感兴趣的小组试试看。你可以参加官方组的组活，也可以加入自由生长的兴趣组；可以上台、创作、应援、唱歌、组乐队，也可以只是看看群聊、参加几次活动、认识一些朋友。
+                <p className="mt-8 font-mono text-2xl tracking-[0.12em] text-white/78 md:text-4xl">
+                  大好きだよ、みんな！
                 </p>
-                <div className="mt-8 flex max-w-3xl flex-wrap gap-2">
-                  {['零基础 OK', '不收社费', '自由参加', '可以加入多个组', '随时加入'].map((tag) => (
-                    <span key={tag} className="border border-white/22 bg-black/45 px-3 py-2 text-xs font-black tracking-[0.08em] text-white/82">
-                      {tag}
+              </div>
+
+              <div className="mt-12 grid max-w-4xl gap-6 md:grid-cols-[auto_1fr] md:items-end">
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-[0.34em] text-white/56">QQ GROUP</p>
+                  <p className="mt-2 font-mono text-5xl font-black tracking-[0.08em] text-white md:text-7xl">{JOIN_GROUP_NUMBER}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={copyJoinGroupNumber}
+                  className="group flex w-fit min-w-[220px] items-center justify-between gap-5 border border-white/22 bg-white/10 px-5 py-4 text-left text-white backdrop-blur-sm transition hover:border-[#c8322a] hover:bg-[#c8322a]"
+                >
+                  <span>
+                    <span className="block text-lg font-black leading-none">{joinGroupCopied ? '已复制群号' : '复制群号'}</span>
+                    <span className="mt-2 block font-mono text-[10px] font-black leading-none tracking-[0.22em] text-white/58 group-hover:text-white/80">
+                      {joinGroupCopied ? 'COPIED' : 'COPY QQ GROUP'}
                     </span>
-                  ))}
-                </div>
+                  </span>
+                  {joinGroupCopied ? <Check className="h-5 w-5 shrink-0" /> : <Copy className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />}
+                </button>
               </div>
+            </div>
 
-              <div className="relative overflow-hidden border border-white/12 bg-[#0c0c0c] shadow-[10px_10px_0_rgb(0_0_0/0.28)]">
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:96px_96px]"></div>
-                <div className="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-[#c8322a]"></div>
-                <div className="pointer-events-none absolute -bottom-10 -right-4 text-[8rem] font-black leading-none tracking-[-0.08em] text-white/[0.035] md:text-[12rem]">
-                  JOIN
-                </div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between border-b border-white/12 px-5 py-4 md:px-7">
-                    <div>
-                      <p className="text-[10px] font-black tracking-[0.34em] text-[#c8322a]">ENTRY GUIDE</p>
-                      <h3 className="mt-1 text-2xl font-black text-white md:text-3xl">从这里开始</h3>
-                    </div>
-                    <UserPlus className="h-8 w-8 text-[#c8322a]" strokeWidth={2.5} />
-                  </div>
+          </section>
 
-                  <div className="grid gap-px bg-white/10">
-                    <article className="bg-[#121212] p-5 md:p-7">
-                      <div className="flex items-start gap-4">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#c8322a] text-lg font-black text-white">01</span>
-                        <div>
-                          <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">QQ GROUP</p>
-                          <h4 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white">加入我们</h4>
-                          <p className="mt-3 text-sm font-bold leading-relaxed text-white/62">
-                            加 QQ 群即可进入檐枫。群号更新后会在这里放出，也可以先通过公众号或 B 站找到我们。
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-5 grid gap-px bg-white/14 sm:grid-cols-[1fr_auto]">
-                        <div className="bg-black/42 px-4 py-4">
-                          <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">MAIN GROUP</p>
-                          <p className="mt-1 font-mono text-3xl font-black text-white">737508445</p>
-                        </div>
-                        <button
-                          type="button"
-                          className="flex min-h-[76px] items-center justify-center gap-2 bg-[#c8322a] px-6 text-sm font-black tracking-[0.12em] text-white transition hover:bg-white hover:text-[#c8322a]"
-                        >
-                          <Send className="h-4 w-4" strokeWidth={2.8} />
-                          加入我们
-                        </button>
-                      </div>
-                    </article>
-
-                    <article className="bg-[#121212] p-5 md:p-7">
-                      <p className="text-xs font-black tracking-[0.28em] text-[#c8322a]">SOCIAL CHANNELS / 02</p>
-                      <div className="mt-4 grid gap-px bg-white/14 sm:grid-cols-2">
-                        {[
-                          ['公众号', '涧桐现视研', '推文与活动回顾'],
-                          ['Bilibili', '檐枫动漫社', '录像和投稿']
-                        ].map(([title, value, note]) => (
-                          <div key={title} className="bg-black/42 p-4">
-                            <p className="text-[10px] font-black tracking-[0.24em] text-[#c8322a]">{title}</p>
-                            <p className="mt-2 text-2xl font-black text-white">{value}</p>
-                            <p className="mt-2 text-xs font-bold leading-relaxed text-white/52">{note}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </article>
-                  </div>
-                </div>
-
-              </div>
-
-              <div className="pointer-events-none absolute bottom-2 right-0 z-20 hidden items-center gap-3 border border-white/16 bg-[#0f0f0f]/92 px-4 py-3 shadow-[6px_6px_0_rgb(0_0_0/0.35)] md:flex">
-                <img src="/image/向日葵.jpg" alt="向日葵" className="h-14 w-14 border border-white/18 object-cover" />
+          {!footerVisible && <ScrollGuide currentIndex={activeScreenIndex} total={SCREEN_IDS.length} />}
+        </div>
+        <footer
+          className="absolute bottom-0 left-0 right-0 z-0 overflow-hidden bg-[#202421] text-white"
+          style={{ height: SITE_FOOTER_HEIGHT }}
+        >
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/35"></div>
+          <div className="pointer-events-none absolute left-0 top-0 h-28 w-full bg-[linear-gradient(180deg,rgba(0,0,0,0.5),transparent)]"></div>
+          <div className="mx-auto grid h-full max-w-[1500px] grid-cols-[0.75fr_1.25fr] items-center gap-12 px-10 py-10">
+            <div className="flex flex-col gap-6">
+              <img src="/image/yanfeng-logo-wordmark.png" alt="檐枫动漫社" className="h-16 w-fit max-w-full object-contain opacity-95" />
+              <div className="flex w-fit items-center gap-3 bg-black/22 px-4 py-3">
+                <img src="/image/向日葵.png" alt="向日葵" className="h-14 w-14 object-cover" />
                 <span>
                   <span className="block text-[10px] font-black tracking-[0.22em] text-[#c8322a]">SITE BUILDER</span>
                   <span className="mt-1 block text-lg font-black tracking-[0.08em] text-white">向日葵</span>
                 </span>
               </div>
             </div>
-          </section>
 
-          <ScrollGuide currentIndex={activeScreenIndex} total={SCREEN_IDS.length} />
-        </div>
+            <div className="grid gap-5 text-sm font-bold leading-relaxed text-white/48">
+              <div className="grid gap-x-10 gap-y-2 sm:grid-cols-2">
+                <p>QQ群 737508445</p>
+                <p>Bilibili 檐枫动漫社</p>
+                <p>公众号 涧桐现视研</p>
+                <p>北京邮电大学 ACGN 爱好者的聚集地</p>
+              </div>
+              <p>部分视觉素材由檐枫动漫社创作组成员提供，感谢各位大佬的创作。</p>
+              <div className="h-px bg-white/16"></div>
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <p>Copyright © YANFENG ACGN FAN CLUB. Site under construction.</p>
+                <button type="button" onClick={() => setFooterVisible(false)} className="text-xs font-black tracking-[0.18em] text-white/72 transition hover:text-[#c8322a]">
+                  BACK TO PAGE
+                </button>
+              </div>
+            </div>
+          </div>
+        </footer>
       </main>
       )}
       <audio
