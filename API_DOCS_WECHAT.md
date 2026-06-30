@@ -12,7 +12,7 @@
 
 ### GET `/articles`
 
-返回最新资讯列表。文章可以手动维护，也可以通过 `npm run crawl:wechat` 从微信公众号文章链接写入。
+返回最新资讯列表。当前项目已移除微信公众号爬虫脚本，文章列表默认为空，需要时可手动维护 `db.json`。
 
 ```json
 [
@@ -50,7 +50,7 @@
 ```json
 {
   "title": "冬日祭舞台剧完整录像",
-  "url": "https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7",
+  "url": "https://player.bilibili.com/player.html?bvid=BVxxxxxxxxxx",
   "type": "bilibili",
   "thumbnail": "https://example.com/cover.jpg",
   "category": "winter"
@@ -99,72 +99,3 @@
 ## 微信图片说明
 
 微信公众号图片常有防盗链限制。正式接入时建议后端抓取并存储封面图，再把稳定的 `coverUrl` 返回给前端。
-
-## 公众号爬虫
-
-脚本位置：`scripts/crawl-wechat.mjs`
-
-默认读取：`scripts/wechat-urls.txt`
-
-运行：
-
-```bash
-npm run crawl:wechat
-```
-
-临时指定链接：
-
-```bash
-npm run crawl:wechat -- https://mp.weixin.qq.com/s/xxx
-```
-
-Dry run：
-
-```bash
-npm run crawl:wechat -- --dry-run
-```
-
-当前爬虫解析字段：
-
-- 标题
-- 发布日期
-- 摘要
-- 来源公众号
-- 原文链接
-- 封面图
-
-注意：这个脚本爬取“已知文章链接”。微信公众号公开侧没有稳定的文章列表接口，自动发现最新推文需要公众号后台权限或其他文章列表来源。
-
-## 低频自动发现
-
-脚本位置：`scripts/discover-wechat.mjs`
-
-配置文件：`scripts/wechat-discover.config.json`
-
-Dry run：
-
-```bash
-npm run discover:wechat -- --dry-run
-```
-
-发现并入库：
-
-```bash
-npm run discover:wechat
-```
-
-脚本会先尝试公众号公开历史页，再尝试搜狗微信搜索。发现新链接后会调用 `crawl-wechat.mjs` 完成解析、入库和封面下载。
-
-这个方案适合低频定时任务，例如每天 `22:35` 或 `23:00` 执行一次。它不是官方接口，可能会遇到验证页或搜索延迟；如果要稳定生产化，仍建议接微信公众号官方后台接口。
-
-日常同步推荐：
-
-```bash
-npm run discover:wechat -- --lookback-days=1
-```
-
-补漏同步推荐：
-
-```bash
-npm run discover:wechat -- --lookback-days=3
-```

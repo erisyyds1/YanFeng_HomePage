@@ -1,19 +1,6 @@
 import { VideoContent } from '../types';
 import { API_BASE_URL } from './config';
 
-export const fetchVideos = async (): Promise<VideoContent[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/videos`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch videos');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching videos:', error);
-    return [];
-  }
-};
-
 export const addVideo = async (video: Omit<VideoContent, 'id'>): Promise<VideoContent | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/videos`, {
@@ -30,6 +17,26 @@ export const addVideo = async (video: Omit<VideoContent, 'id'>): Promise<VideoCo
     return await response.json();
   } catch (error) {
     console.error('Error adding video:', error);
+    return null;
+  }
+};
+
+export const updateVideo = async (id: string, video: Omit<VideoContent, 'id'>): Promise<VideoContent | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(video),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to update video');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating video:', error);
     return null;
   }
 };

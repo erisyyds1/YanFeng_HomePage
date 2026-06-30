@@ -26,6 +26,19 @@ export interface VideoContent {
   category: VideoCategory;
 }
 
+export type ManagedImageCategory = 'gallery' | 'album';
+
+export interface ManagedImageItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  category: ManagedImageCategory;
+}
+
+export interface SiteSettings {
+  mainGroupNumber: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';

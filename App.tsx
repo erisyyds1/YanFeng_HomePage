@@ -7,9 +7,14 @@ import {
   ChevronRight,
   Clapperboard,
   Copy,
+  Edit3,
   Gamepad2,
   HeartHandshake,
   Home,
+  Image as ImageIcon,
+  ImagePlus,
+  Link as LinkIcon,
+  LogOut,
   Megaphone,
   Mic2,
   Music2,
@@ -20,19 +25,23 @@ import {
   ShieldCheck,
   Star,
   Theater,
+  Trash2,
   Trophy,
   UserPlus,
   Users,
   Video,
-  Wand2
+  Wand2,
+  X
 } from 'lucide-react';
-import { AppTheme, NewsItem } from './types';
+import { AppTheme, ManagedImageCategory, ManagedImageItem } from './types';
 import { WECHAT_ARTICLES } from './constants';
 
 import EventGallery from './components/EventGallery';
 import MediaHub, { getMediaEntry, MEDIA_ENTRIES, type MediaContentId } from './components/MediaHub';
+import RetroCard from './components/RetroCard';
 import WechatArchive from './components/WechatArchive';
-import { fetchWeChatArticles } from './services/wechatService';
+import { addManagedImage, deleteManagedImage, fetchManagedImages, updateManagedImage } from './services/mediaImageService';
+import { fetchSiteSettings, updateSiteSettings } from './services/siteSettingsService';
 import logo from './assets/logo.svg';
 
 type AnchorId = 'home' | 'about' | 'groups' | 'activities' | 'media' | 'join';
@@ -60,6 +69,9 @@ const SECONDARY_BG_IMAGE = '/image/secondary-page-bg.png';
 const BLACKBOARD_PANEL_IMAGE = '/image/blackboard-panel.png';
 const JOIN_IMAGE = '/image/join-2025-anniversary.png';
 const JOIN_GROUP_NUMBER = '737508445';
+const ADMIN_PASSWORD = '18522';
+const MAIN_GROUP_STORAGE_KEY = 'yanfeng-main-group-number';
+const MANAGED_IMAGES_STORAGE_KEY = 'yanfeng-managed-images';
 
 const NAV_ITEMS: { label: string; labelEn: string; target: AnchorId; icon: React.ElementType }[] = [
   { label: '首页', labelEn: 'INDEX', target: 'home', icon: Home },
@@ -255,10 +267,31 @@ const ACTIVITIES: ActivityItem[] = [
 ];
 
 const App: React.FC = () => {
-  const [wechatNews, setWechatNews] = useState<NewsItem[]>(WECHAT_ARTICLES);
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [copiedGroupTitle, setCopiedGroupTitle] = useState<string | null>(null);
   const [joinGroupCopied, setJoinGroupCopied] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(() => window.sessionStorage.getItem('yanfeng-edit-mode') === 'true');
+  const [mainGroupNumber, setMainGroupNumber] = useState(() => window.localStorage.getItem(MAIN_GROUP_STORAGE_KEY) || JOIN_GROUP_NUMBER);
+  const [managedImages, setManagedImages] = useState<ManagedImageItem[]>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem(MANAGED_IMAGES_STORAGE_KEY) || '[]') as ManagedImageItem[];
+    } catch {
+      return [];
+    }
+  });
+  const [adminAccessOpen, setAdminAccessOpen] = useState(false);
+  const [adminAccessValue, setAdminAccessValue] = useState('');
+  const [groupEditorOpen, setGroupEditorOpen] = useState(false);
+  const [groupEditorValue, setGroupEditorValue] = useState(mainGroupNumber);
+  const [groupEditorError, setGroupEditorError] = useState('');
+  const [groupEditorNotice, setGroupEditorNotice] = useState('');
+  const [imageFormCategory, setImageFormCategory] = useState<ManagedImageCategory | null>(null);
+  const [imageFormTitle, setImageFormTitle] = useState('');
+  const [imageFormUrl, setImageFormUrl] = useState('');
+  const [imageFormError, setImageFormError] = useState('');
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [managedImageNotice, setManagedImageNotice] = useState('');
+  const [imageDeleteTarget, setImageDeleteTarget] = useState<ManagedImageItem | null>(null);
   const [activeScreen, setActiveScreen] = useState<AnchorId>('home');
   const [activeMediaEntry, setActiveMediaEntry] = useState<MediaContentId | null>(null);
   const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
@@ -279,6 +312,37 @@ const App: React.FC = () => {
 
   useEffect(() => {
     document.body.setAttribute('data-theme', AppTheme.DEFAULT);
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem('yanfeng-edit-mode', String(isEditMode));
+  }, [isEditMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(MAIN_GROUP_STORAGE_KEY, mainGroupNumber);
+  }, [mainGroupNumber]);
+
+  useEffect(() => {
+    window.localStorage.setItem(MANAGED_IMAGES_STORAGE_KEY, JSON.stringify(managedImages));
+  }, [managedImages]);
+
+  useEffect(() => {
+    const loadManagedContent = async () => {
+      const [settings, images] = await Promise.all([
+        fetchSiteSettings(),
+        fetchManagedImages()
+      ]);
+
+      if (settings?.mainGroupNumber) {
+        setMainGroupNumber(settings.mainGroupNumber);
+      }
+
+      if (images.length > 0) {
+        setManagedImages(images);
+      }
+    };
+
+    void loadManagedContent();
   }, []);
 
   useEffect(() => {
@@ -355,19 +419,6 @@ const App: React.FC = () => {
     return cleanup;
   }, []);
 
-  useEffect(() => {
-    const loadNews = async () => {
-      try {
-        const data = await fetchWeChatArticles();
-        setWechatNews(data && data.length > 0 ? data : WECHAT_ARTICLES);
-      } catch (e) {
-        console.error('Failed to load news due to error:', e);
-        setWechatNews(WECHAT_ARTICLES);
-      }
-    };
-    loadNews();
-  }, []);
-
   const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const goToScreen = (target: AnchorId) => {
@@ -427,10 +478,10 @@ const App: React.FC = () => {
   const copyJoinGroupNumber = async () => {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(JOIN_GROUP_NUMBER);
+        await navigator.clipboard.writeText(mainGroupNumber);
       } else {
         const textarea = document.createElement('textarea');
-        textarea.value = JOIN_GROUP_NUMBER;
+        textarea.value = mainGroupNumber;
         textarea.style.position = 'fixed';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
@@ -443,6 +494,140 @@ const App: React.FC = () => {
       window.setTimeout(() => setJoinGroupCopied(false), 1600);
     } catch (error) {
       console.error('Failed to copy join group number:', error);
+    }
+  };
+
+  const handleSunflowerAdminAccess = () => {
+    setAdminAccessValue('');
+    setAdminAccessOpen(true);
+  };
+
+  const submitAdminAccess = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (adminAccessValue.trim() === ADMIN_PASSWORD) {
+      setIsEditMode(true);
+    }
+
+    setAdminAccessOpen(false);
+    setAdminAccessValue('');
+  };
+
+  const exitEditMode = () => {
+    setIsEditMode(false);
+  };
+
+  const openGroupEditor = () => {
+    setGroupEditorValue(mainGroupNumber);
+    setGroupEditorError('');
+    setGroupEditorNotice('');
+    setGroupEditorOpen(true);
+  };
+
+  const submitGroupNumber = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const cleanGroupNumber = groupEditorValue.trim();
+    if (!cleanGroupNumber) {
+      setGroupEditorError('群号不能为空。');
+      return;
+    }
+
+    setGroupEditorError('');
+    setGroupEditorNotice('');
+    setMainGroupNumber(cleanGroupNumber);
+    const savedSettings = await updateSiteSettings({ mainGroupNumber: cleanGroupNumber });
+    if (savedSettings?.mainGroupNumber) {
+      setMainGroupNumber(savedSettings.mainGroupNumber);
+      setGroupEditorOpen(false);
+      return;
+    }
+
+    setGroupEditorNotice('API 暂时没有保存成功，已先保存在当前浏览器。');
+  };
+
+  const createManagedImageId = () => {
+    return window.crypto?.randomUUID?.() || `media-${Date.now()}`;
+  };
+
+  const resetManagedImageForm = () => {
+    setImageFormCategory(null);
+    setImageFormTitle('');
+    setImageFormUrl('');
+    setImageFormError('');
+    setEditingImageId(null);
+  };
+
+  const openManagedImageForm = (category: ManagedImageCategory) => {
+    setImageFormCategory(category);
+    setImageFormTitle('');
+    setImageFormUrl('');
+    setImageFormError('');
+    setEditingImageId(null);
+    setManagedImageNotice('');
+  };
+
+  const openManagedImageEditor = (image: ManagedImageItem) => {
+    setImageFormCategory(image.category);
+    setImageFormTitle(image.title);
+    setImageFormUrl(image.imageUrl);
+    setImageFormError('');
+    setEditingImageId(image.id);
+    setManagedImageNotice('');
+  };
+
+  const submitManagedImage = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!imageFormCategory) return;
+
+    const cleanImageUrl = imageFormUrl.trim();
+    if (!cleanImageUrl) {
+      setImageFormError('图片地址不能为空。');
+      return;
+    }
+
+    const imageData = {
+      title: imageFormTitle.trim() || (imageFormCategory === 'album' ? '未命名专辑图片' : '未命名画集图片'),
+      imageUrl: cleanImageUrl,
+      category: imageFormCategory
+    };
+    const savedImage = editingImageId
+      ? await updateManagedImage(editingImageId, imageData)
+      : await addManagedImage(imageData);
+
+    setManagedImages((currentImages) => {
+      if (editingImageId) {
+        const fallbackImage = { id: editingImageId, ...imageData };
+        return currentImages.map((image) => (image.id === editingImageId ? savedImage || fallbackImage : image));
+      }
+
+      return [
+        savedImage || { id: createManagedImageId(), ...imageData },
+        ...currentImages
+      ];
+    });
+
+    resetManagedImageForm();
+
+    if (!savedImage) {
+      setManagedImageNotice(editingImageId ? 'API 暂时没有保存成功，已先在当前浏览器更新。' : 'API 暂时没有保存成功，已先保存在当前浏览器。');
+    }
+  };
+
+  const requestDeleteManagedImage = (image: ManagedImageItem) => {
+    setImageDeleteTarget(image);
+  };
+
+  const confirmDeleteManagedImage = async () => {
+    if (!imageDeleteTarget) return;
+    const image = imageDeleteTarget;
+
+    const success = await deleteManagedImage(image.id);
+    setManagedImages((currentImages) => currentImages.filter((item) => item.id !== image.id));
+    setImageDeleteTarget(null);
+
+    if (!success) {
+      setManagedImageNotice('API 暂时没有删除成功，已先从当前浏览器移除。');
     }
   };
 
@@ -628,21 +813,174 @@ const App: React.FC = () => {
     return 'idle';
   };
 
-  const renderMediaPlaceholder = () => {
+  const renderManagedImageArchive = (category: ManagedImageCategory) => {
     if (!activeMedia) return null;
     const MediaIcon = activeMedia.icon;
+    const images = managedImages.filter((image) => image.category === category);
+    const emptyText = category === 'album' ? '暂时还没有专辑图片' : '暂时还没有画集图片';
+    const imageFormActive = imageFormCategory === category;
 
     return (
-      <div className="grid min-h-[520px] place-items-center bg-white p-2 shadow-[6px_6px_0px_var(--theme-border)]">
-        <div className="flex h-full w-full flex-col items-center justify-center bg-[#111] px-6 py-16 text-center text-white">
-          <div className="flex h-20 w-20 items-center justify-center border-4 border-[#c8322a] bg-black">
-            <MediaIcon className="h-10 w-10 text-[#c8322a]" />
+      <div className="min-h-[520px] border border-white/12 bg-black/38 p-5 shadow-[12px_12px_0_rgb(0_0_0/0.22)]">
+        <div className="flex flex-col gap-5 border-b border-white/12 pb-5 md:flex-row md:items-end md:justify-between">
+          <div className="flex items-end gap-4">
+            <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white">
+              <MediaIcon className="h-8 w-8" />
+            </span>
+            <div>
+              <p className="text-xs font-black tracking-[0.34em] text-[#c8322a]">{activeMedia.label}</p>
+              <h3 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">{activeMedia.title}</h3>
+            </div>
           </div>
-          <p className="mt-8 text-sm font-black tracking-[0.35em] text-[#c8322a]">{activeMedia.label}</p>
-          <h3 className="mt-3 text-4xl font-black tracking-[-0.04em] md:text-5xl">{activeMedia.title}</h3>
-          <p className="mt-5 max-w-xl text-base font-bold leading-relaxed text-white/62">{activeMedia.description}</p>
-          <p className="mt-8 border border-white/18 px-4 py-3 text-sm font-black tracking-[0.16em] text-white/65">内容整理中</p>
+
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={imageFormActive ? resetManagedImageForm : () => openManagedImageForm(category)}
+              className="flex w-fit items-center gap-2 rounded-lg bg-[#c8322a] px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0px_#000] transition hover:-translate-y-0.5 hover:bg-white hover:text-[#c8322a]"
+            >
+              {imageFormActive ? <X className="h-4 w-4" /> : <ImagePlus className="h-4 w-4" />}
+              {imageFormActive ? '收起表单' : '添加图片'}
+            </button>
+          )}
         </div>
+
+        {managedImageNotice && (
+          <p className="mt-5 border border-[#c8322a]/45 bg-[#c8322a]/12 px-4 py-3 text-sm font-bold text-white/72">
+            {managedImageNotice}
+          </p>
+        )}
+
+        {isEditMode && imageFormActive && (
+          <RetroCard variant="ticket" className="my-6">
+            <form onSubmit={submitManagedImage} className="space-y-4">
+              <h3 className="mb-4 text-xl font-bold text-[var(--theme-primary)]">
+                {editingImageId
+                  ? category === 'album'
+                    ? '编辑专辑图片'
+                    : '编辑画集图片'
+                  : category === 'album'
+                    ? '添加专辑图片'
+                    : '添加画集图片'}
+              </h3>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-[var(--theme-border)]">图片标题</label>
+                  <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
+                    <Edit3 size={18} className="mr-2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={imageFormTitle}
+                      onChange={(event) => setImageFormTitle(event.target.value)}
+                      placeholder={category === 'album' ? '输入专辑图片标题...' : '输入画集图片标题...'}
+                      className="w-full bg-transparent text-black outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-[var(--theme-border)]">图片地址</label>
+                  <div className="flex items-center rounded border-2 border-[var(--theme-border)] bg-white p-2">
+                    <LinkIcon size={18} className="mr-2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={imageFormUrl}
+                      onChange={(event) => setImageFormUrl(event.target.value)}
+                      placeholder="/image/example.png 或 https://example.com/image.jpg"
+                      className="w-full bg-transparent text-black outline-none"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">提示：可以填写 public 里的路径，例如 /image/xxx.png。</p>
+                </div>
+              </div>
+
+              {imageFormUrl && (
+                <div className="text-xs text-gray-500">
+                  <p className="mb-1 font-bold">预览：</p>
+                  <img src={imageFormUrl} alt="图片预览" className="h-28 rounded border border-gray-200 bg-black object-cover" />
+                </div>
+              )}
+
+              {imageFormError && (
+                <p className="rounded border-2 border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-600">
+                  {imageFormError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={resetManagedImageForm}
+                  className="border-2 border-[var(--theme-border)] bg-white px-6 py-2 font-bold text-[var(--theme-border)] transition-colors hover:bg-gray-100"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="rounded bg-[var(--theme-accent)] px-6 py-2 font-bold text-white transition-colors hover:bg-opacity-90"
+                >
+                  {editingImageId ? '确认保存' : '确认添加'}
+                </button>
+              </div>
+            </form>
+          </RetroCard>
+        )}
+
+        {images.length > 0 ? (
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {images.map((image) => (
+              <RetroCard key={image.id} variant="paper" className="h-full">
+                <div className="flex h-full flex-col rounded border-2 border-[var(--theme-border)] bg-white p-2 shadow-md">
+                  <div className="aspect-[4/3] overflow-hidden rounded bg-black">
+                    <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
+                  </div>
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <ImageIcon className="shrink-0 text-[var(--theme-primary)]" size={24} />
+                      <div>
+                        <h4 className="text-lg font-bold leading-tight text-[var(--theme-border)]">{image.title}</h4>
+                        <p className="mt-1 text-xs uppercase tracking-wider text-gray-500">Yanfeng Image Archive</p>
+                      </div>
+                    </div>
+
+                    {isEditMode && (
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openManagedImageEditor(image)}
+                          className="p-1 text-gray-400 transition-colors hover:text-[var(--theme-primary)]"
+                          title="编辑图片"
+                        >
+                          <Edit3 size={19} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => requestDeleteManagedImage(image)}
+                          className="p-1 text-gray-400 transition-colors hover:text-red-500"
+                          title="删除图片"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </RetroCard>
+            ))}
+          </div>
+        ) : (
+          <div className="grid min-h-[340px] place-items-center text-center">
+            <div>
+              <MediaIcon className="mx-auto h-12 w-12 text-[#c8322a]" />
+              <p className="mt-5 text-xl font-black text-white">{emptyText}</p>
+              <p className="mt-3 text-sm font-bold text-white/45">
+                {isEditMode ? '点击右上角添加第一张图片。' : '内容整理中'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -650,6 +988,159 @@ const App: React.FC = () => {
   return (
     <div className="h-[100dvh] bg-[#080808] text-[#f6f0dc] font-sans overflow-hidden selection:bg-[#c8322a] selection:text-white">
       <div className="fixed inset-0 pointer-events-none opacity-[0.08] checker-bg"></div>
+
+      {isEditMode && (
+        <div className="fixed bottom-5 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-3 border border-[#c8322a]/70 bg-black/82 px-4 py-3 text-white shadow-[0_18px_45px_rgb(0_0_0/0.42)] backdrop-blur-md">
+          <span className="flex items-center gap-2 text-xs font-black tracking-[0.16em] text-[#c8322a]">
+            <Edit3 className="h-4 w-4" />
+            编辑模式
+          </span>
+          <button
+            type="button"
+            onClick={exitEditMode}
+            className="flex items-center gap-2 bg-[#c8322a] px-3 py-2 text-xs font-black tracking-[0.12em] text-white transition hover:bg-white hover:text-[#c8322a]"
+          >
+            <LogOut className="h-4 w-4" />
+            退出
+          </button>
+        </div>
+      )}
+
+      {adminAccessOpen && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
+          <form onSubmit={submitAdminAccess} autoComplete="off" className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
+            <div className="flex items-start justify-between gap-5">
+              <div>
+                <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">SUNFLOWER ACCESS</p>
+                <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">诶，这里有朵向日葵</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminAccessOpen(false)}
+                className="p-2 text-white/45 transition hover:bg-white/10 hover:text-white"
+                aria-label="关闭"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-6 border border-white/12 bg-black/45 p-3">
+              <input
+                autoFocus
+                type="text"
+                name="sunflower-message"
+                autoComplete="off"
+                spellCheck={false}
+                value={adminAccessValue}
+                onChange={(event) => {
+                  setAdminAccessValue(event.target.value);
+                }}
+                placeholder="要对向日葵说些什么？"
+                className="w-full bg-transparent font-mono text-xl font-black tracking-[0.12em] text-white outline-none placeholder:text-white/25"
+              />
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setAdminAccessOpen(false)}
+                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
+              >
+                取消
+              </button>
+              <button type="submit" className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]">
+                确认
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {groupEditorOpen && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
+          <form onSubmit={submitGroupNumber} className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
+            <div className="flex items-start justify-between gap-5">
+              <div>
+                <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">QQ GROUP</p>
+                <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">修改大群群号</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGroupEditorOpen(false)}
+                className="p-2 text-white/45 transition hover:bg-white/10 hover:text-white"
+                aria-label="关闭"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <label className="mt-6 block text-[11px] font-black tracking-[0.22em] text-white/42">MAIN GROUP NUMBER</label>
+            <div className="mt-2 border border-white/12 bg-black/45 p-3">
+              <input
+                autoFocus
+                type="text"
+                value={groupEditorValue}
+                onChange={(event) => {
+                  setGroupEditorValue(event.target.value);
+                  setGroupEditorError('');
+                  setGroupEditorNotice('');
+                }}
+                className="w-full bg-transparent font-mono text-2xl font-black tracking-[0.1em] text-white outline-none placeholder:text-white/25"
+              />
+            </div>
+            {groupEditorError && (
+              <p className="mt-3 border border-[#c8322a]/45 bg-[#c8322a]/12 px-3 py-2 text-sm font-bold text-white/78">
+                {groupEditorError}
+              </p>
+            )}
+            {groupEditorNotice && (
+              <p className="mt-3 border border-white/14 bg-white/[0.06] px-3 py-2 text-sm font-bold text-white/62">
+                {groupEditorNotice}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setGroupEditorOpen(false)}
+                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
+              >
+                取消
+              </button>
+              <button type="submit" className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]">
+                保存群号
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {imageDeleteTarget && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/72 px-5 backdrop-blur-md">
+          <div className="w-full max-w-md border border-[#c8322a]/55 bg-[#0b0b0b] p-6 text-white shadow-[18px_18px_0_rgb(0_0_0/0.35)]">
+            <p className="text-[10px] font-black tracking-[0.32em] text-[#c8322a]">DELETE IMAGE</p>
+            <h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">删除图片</h2>
+            <p className="mt-4 text-sm font-bold leading-relaxed text-white/58">
+              确定要删除「{imageDeleteTarget.title}」吗？这个操作会从当前列表中移除它。
+            </p>
+            <div className="mt-5 overflow-hidden border border-white/12 bg-black">
+              <img src={imageDeleteTarget.imageUrl} alt={imageDeleteTarget.title} className="h-36 w-full object-cover opacity-75" />
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setImageDeleteTarget(null)}
+                className="border border-white/18 px-5 py-3 text-sm font-black text-white/62 transition hover:border-white/40 hover:text-white"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDeleteManagedImage()}
+                className="bg-[#c8322a] px-5 py-3 text-sm font-black text-white transition hover:bg-white hover:text-[#c8322a]"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-black/72 backdrop-blur-md">
         <div className="flex h-[76px] items-stretch justify-between px-4 md:h-[92px] md:px-8 xl:px-12">
@@ -771,9 +1262,10 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {activeMediaEntry === 'videos' && <EventGallery currentTheme={AppTheme.DEFAULT} />}
-            {activeMediaEntry === 'wechat' && <WechatArchive articles={wechatNews} />}
-            {(activeMediaEntry === 'vocaloid' || activeMediaEntry === 'gallery') && renderMediaPlaceholder()}
+            {activeMediaEntry === 'videos' && <EventGallery currentTheme={AppTheme.DEFAULT} isEditMode={isEditMode} />}
+            {activeMediaEntry === 'wechat' && <WechatArchive articles={WECHAT_ARTICLES} />}
+            {activeMediaEntry === 'gallery' && renderManagedImageArchive('gallery')}
+            {activeMediaEntry === 'vocaloid' && renderManagedImageArchive('album')}
           </div>
         </main>
       ) : (
@@ -1232,21 +1724,33 @@ const App: React.FC = () => {
               <div className="mt-12 grid max-w-4xl gap-6 md:grid-cols-[auto_1fr] md:items-end">
                 <div>
                   <p className="font-mono text-xs uppercase tracking-[0.34em] text-white/56">QQ GROUP</p>
-                  <p className="mt-2 font-mono text-5xl font-black tracking-[0.08em] text-white md:text-7xl">{JOIN_GROUP_NUMBER}</p>
+                  <p className="mt-2 font-mono text-5xl font-black tracking-[0.08em] text-white md:text-7xl">{mainGroupNumber}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={copyJoinGroupNumber}
-                  className="group flex w-fit min-w-[220px] items-center justify-between gap-5 border border-white/22 bg-white/10 px-5 py-4 text-left text-white backdrop-blur-sm transition hover:border-[#c8322a] hover:bg-[#c8322a]"
-                >
-                  <span>
-                    <span className="block text-lg font-black leading-none">{joinGroupCopied ? '已复制群号' : '复制群号'}</span>
-                    <span className="mt-2 block font-mono text-[10px] font-black leading-none tracking-[0.22em] text-white/58 group-hover:text-white/80">
-                      {joinGroupCopied ? 'COPIED' : 'COPY QQ GROUP'}
+                <div className="flex flex-wrap items-end gap-3">
+                  <button
+                    type="button"
+                    onClick={copyJoinGroupNumber}
+                    className="group flex w-fit min-w-[220px] items-center justify-between gap-5 border border-white/22 bg-white/10 px-5 py-4 text-left text-white backdrop-blur-sm transition hover:border-[#c8322a] hover:bg-[#c8322a]"
+                  >
+                    <span>
+                      <span className="block text-lg font-black leading-none">{joinGroupCopied ? '已复制群号' : '复制群号'}</span>
+                      <span className="mt-2 block font-mono text-[10px] font-black leading-none tracking-[0.22em] text-white/58 group-hover:text-white/80">
+                        {joinGroupCopied ? 'COPIED' : 'COPY QQ GROUP'}
+                      </span>
                     </span>
-                  </span>
-                  {joinGroupCopied ? <Check className="h-5 w-5 shrink-0" /> : <Copy className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />}
-                </button>
+                    {joinGroupCopied ? <Check className="h-5 w-5 shrink-0" /> : <Copy className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110" />}
+                  </button>
+                  {isEditMode && (
+                    <button
+                      type="button"
+                      onClick={openGroupEditor}
+                      className="flex items-center gap-2 border border-[#c8322a] bg-black/48 px-4 py-3 text-sm font-black text-white backdrop-blur-sm transition hover:bg-[#c8322a]"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      修改群号
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1264,7 +1768,13 @@ const App: React.FC = () => {
             <div className="flex flex-col gap-6">
               <img src="/image/yanfeng-logo-wordmark.png" alt="檐枫动漫社" className="h-16 w-fit max-w-full object-contain opacity-95" />
               <div className="flex w-fit items-center gap-3 bg-black/22 px-4 py-3">
-                <img src="/image/向日葵.png" alt="向日葵" className="h-14 w-14 object-cover" />
+                <img
+                  src="/image/向日葵.png"
+                  alt="向日葵"
+                  draggable={false}
+                  onDoubleClick={handleSunflowerAdminAccess}
+                  className="h-14 w-14 cursor-pointer select-none object-cover"
+                />
                 <span>
                   <span className="block text-[10px] font-black tracking-[0.22em] text-[#c8322a]">SITE BUILDER</span>
                   <span className="mt-1 block text-lg font-black tracking-[0.08em] text-white">向日葵</span>
@@ -1274,12 +1784,12 @@ const App: React.FC = () => {
 
             <div className="grid gap-5 text-sm font-bold leading-relaxed text-white/48">
               <div className="grid gap-x-10 gap-y-2 sm:grid-cols-2">
-                <p>QQ群 737508445</p>
+                <p>QQ群 {mainGroupNumber}</p>
                 <p>Bilibili 檐枫动漫社</p>
                 <p>公众号 涧桐现视研</p>
                 <p>北京邮电大学 ACGN 爱好者的聚集地</p>
               </div>
-              <p>部分视觉素材由檐枫动漫社创作组成员提供，感谢各位大佬的创作。</p>
+              <p>部分视觉素材由檐枫动漫社创作组成员提供，感谢各位的创作。</p>
               <div className="h-px bg-white/16"></div>
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <p>Copyright © YANFENG ACGN FAN CLUB. Site under construction.</p>

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Play, Film, Link as LinkIcon, Image as ImageIcon, Trash2, Search, Filter } from 'lucide-react';
+import { Play, Film, Link as LinkIcon, Image as ImageIcon, Trash2, Search, Filter, Edit3, Plus, X } from 'lucide-react';
 import { VideoContent, AppTheme, VideoCategory } from '../types';
 import RetroCard from './RetroCard';
 
 interface EventGalleryProps {
   currentTheme: AppTheme;
+  isEditMode?: boolean;
 }
 
-import { fetchVideos, addVideo, deleteVideo } from '../services/videoService';
+import { addVideo, deleteVideo, updateVideo } from '../services/videoService';
 
 const normalizeBilibiliPlayerUrl = (input: string): string | null => {
   const trimmed = input.trim();
@@ -39,7 +40,7 @@ const appendAutoplay = (url: string): string => {
   }
 };
 
-const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
+const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme, isEditMode = false }) => {
   const [videos, setVideos] = useState<VideoContent[]>([]);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
@@ -53,16 +54,13 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
   const [uploadCategory, setUploadCategory] = useState<VideoCategory>('daily'); // Default upload category
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [formError, setFormError] = useState('');
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   
   const [showForm, setShowForm] = useState(false);
 
-  // Fetch videos from backend on mount
   React.useEffect(() => {
-    const loadVideos = async () => {
-        const data = await fetchVideos();
-        setVideos(data);
-    };
-    loadVideos();
+    setVideos([]);
+    setPlayingVideoId(null);
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -74,6 +72,31 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
           alert('删除失败，请稍后重试');
       }
     }
+  };
+
+  const resetVideoForm = () => {
+    setBilibiliLink('');
+    setVideoTitle('');
+    setThumbnailUrl('');
+    setUploadCategory('daily');
+    setFormError('');
+    setEditingVideoId(null);
+    setShowForm(false);
+  };
+
+  const openAddVideoForm = () => {
+    resetVideoForm();
+    setShowForm(true);
+  };
+
+  const handleEditVideo = (video: VideoContent) => {
+    setEditingVideoId(video.id);
+    setVideoTitle(video.title);
+    setBilibiliLink(video.url);
+    setThumbnailUrl(video.thumbnail || '');
+    setUploadCategory(video.category);
+    setFormError('');
+    setShowForm(true);
   };
 
   const handleBilibiliSubmit = async (e: React.FormEvent) => {
@@ -104,17 +127,19 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
       category: uploadCategory
     };
 
-    const savedVideo = await addVideo(newVideoData);
+    const savedVideo = editingVideoId
+      ? await updateVideo(editingVideoId, newVideoData)
+      : await addVideo(newVideoData);
 
     if (savedVideo) {
-        setVideos([savedVideo, ...videos]);
-        setBilibiliLink('');
-        setVideoTitle('');
-        setThumbnailUrl('');
-        setShowForm(false);
-        setActiveCategory(uploadCategory); 
+        setVideos((currentVideos) => editingVideoId
+          ? currentVideos.map((video) => (video.id === editingVideoId ? savedVideo : video))
+          : [savedVideo, ...currentVideos]
+        );
+        resetVideoForm();
+        setActiveCategory(uploadCategory);
     } else {
-        setFormError('添加失败，请检查 API 服务是否启动。');
+        setFormError(editingVideoId ? '更新失败，请检查 API 服务是否启动。' : '添加失败，请检查 API 服务是否启动。');
     }
   };
 
@@ -143,6 +168,16 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
               <h2 className="text-4xl font-retro text-[var(--theme-primary)]">活动录像</h2>
               <p className={`${currentTheme === AppTheme.GMA ? 'text-black' : 'text-[var(--theme-accent)]'} mt-2 font-bold`}>SHOWCASE & MEMORIES</p>
            </div>
+           {isEditMode && (
+             <button
+               type="button"
+               onClick={showForm ? resetVideoForm : openAddVideoForm}
+               className="flex items-center gap-2 rounded-lg bg-[var(--theme-primary)] px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0px_var(--theme-border)] transition hover:-translate-y-0.5"
+             >
+               {showForm ? <X size={18} /> : <Plus size={18} />}
+               {showForm ? '收起表单' : '添加 Bilibili 视频'}
+             </button>
+           )}
         </div>
 
         {/* Navigation & Search Bar Container */}
@@ -184,10 +219,12 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
       </div>
 
       {/* Add Video Form */}
-      {showForm && (
+      {isEditMode && showForm && (
         <RetroCard variant="ticket" className="mb-8">
           <form onSubmit={handleBilibiliSubmit} className="space-y-4">
-            <h3 className="text-xl font-bold text-[var(--theme-primary)] mb-4">添加 Bilibili 外链视频</h3>
+            <h3 className="text-xl font-bold text-[var(--theme-primary)] mb-4">
+              {editingVideoId ? '编辑 Bilibili 外链视频' : '添加 Bilibili 外链视频'}
+            </h3>
             
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -264,12 +301,19 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
               </p>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={resetVideoForm}
+                className="border-2 border-[var(--theme-border)] bg-white px-6 py-2 font-bold text-[var(--theme-border)] transition-colors hover:bg-gray-100"
+              >
+                取消
+              </button>
               <button 
                 type="submit"
                 className="bg-[var(--theme-accent)] text-white px-6 py-2 rounded font-bold hover:bg-opacity-90 transition-colors"
               >
-                确认添加
+                {editingVideoId ? '确认保存' : '确认添加'}
               </button>
             </div>
           </form>
@@ -339,23 +383,36 @@ const EventGallery: React.FC<EventGalleryProps> = ({ currentTheme }) => {
                         </div>
                       </div>
                       
-                      <button 
-                        onClick={() => handleDelete(video.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                        title="删除视频"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                      {isEditMode && (
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleEditVideo(video)}
+                            className="p-1 text-gray-400 transition-colors hover:text-[var(--theme-primary)]"
+                            title="编辑视频"
+                          >
+                            <Edit3 size={19} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(video.id)}
+                            className="p-1 text-gray-400 transition-colors hover:text-red-500"
+                            title="删除视频"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </div>
+                      )}
                   </div>
               </div>
             </RetroCard>
           ))
         ) : (
-          <div className="col-span-full py-20 text-center opacity-50">
-             <div className="inline-block p-6 rounded-full bg-[var(--theme-secondary)] border-4 border-[var(--theme-border)] mb-4">
-               <Film size={48} className="text-[var(--theme-primary)]" />
+          <div className="col-span-full py-20 text-center">
+             <div className="inline-block p-6 rounded-full border-4 border-white/18 bg-white/10 mb-4 shadow-[0_0_34px_rgba(255,255,255,0.08)]">
+               <Film size={48} className="text-[#c8322a]" />
              </div>
-             <p className="font-bold text-xl text-[var(--theme-border)]">
+             <p className="font-bold text-xl text-white/82">
                {searchQuery ? `未找到与 "${searchQuery}" 相关的视频` : '该分类下暂无视频'}
              </p>
           </div>

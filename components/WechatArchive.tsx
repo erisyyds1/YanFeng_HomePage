@@ -160,11 +160,11 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ articles }) => {
         {filteredArticles.length > 0 ? (
           filteredArticles.map(renderArticleCard)
         ) : (
-          <div className="col-span-full py-20 text-center opacity-60">
-            <div className="mb-4 inline-block border-4 border-[var(--theme-border)] bg-[var(--theme-secondary)] p-6">
+          <div className="col-span-full py-20 text-center">
+            <div className="mb-4 inline-block border-4 border-white/18 bg-white/10 p-6 shadow-[0_0_34px_rgba(255,255,255,0.08)]">
               <NotebookPen size={48} className="text-[var(--theme-primary)]" />
             </div>
-            <p className="text-xl font-bold text-[var(--theme-border)]">
+            <p className="text-xl font-bold text-white/82">
               {searchQuery ? `未找到与 "${searchQuery}" 相关的推文` : '该分类下暂无推文'}
             </p>
           </div>

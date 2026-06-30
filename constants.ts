@@ -26,50 +26,7 @@ export const YANFENG_KNOWLEDGE_BASE = `
 `;
 
 
-export const WECHAT_ARTICLES: NewsItem[] = [
-  {
-    id: '1',
-    title: '【招新】2024秋季招新正式启动！',
-    date: '2024-09-01',
-    summary: '没有门槛，不收社费，十个官方组和许多兴趣方向都欢迎新朋友来玩。',
-    // tag removed
-    // source removed
-    link: '#',
-    // coverUrl: 'https://picsum.photos/seed/yanfeng1/400/200'
-  },
-  {
-    id: '2',
-    title: '【活动回顾】第14届夏日祭圆满落幕',
-    date: '2024-07-15',
-    summary: '感谢所有staff的辛勤付出，本次活动参与人数创历史新高！现场返图已上传。',
-    // tag removed
-    // tag removed
-    // source removed
-    link: '#',
-    // coverUrl: 'https://picsum.photos/seed/yanfeng2/400/200'
-  },
-  {
-    id: '3',
-    title: '【GMA前瞻】入围名单大公开！',
-    date: '2024-10-25',
-    summary: '年终动画评选活动正在筹备中，剪辑、奖项设计和直播颁奖都在推进。',
-    // tag removed
-    // tag removed
-    // source removed
-    link: '#',
-    // coverUrl: 'https://picsum.photos/seed/yanfeng3/400/200'
-  },
-  {
-    id: '4',
-    title: '【通知】关于本周五例行活动的调整通知',
-    date: '2024-10-20',
-    summary: '由于场地原因，原定于活动中心的例会改至3号教学楼201教室。',
-    // tag removed
-    // tag removed
-    // source removed
-    link: '#'
-  }
-];
+export const WECHAT_ARTICLES: NewsItem[] = [];
 
 export const MOCK_NEWS: NewsItem[] = [
   {

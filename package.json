@@ -7,9 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "api": "node server.mjs",
-    "crawl:wechat": "node scripts/crawl-wechat.mjs",
-    "discover:wechat": "node scripts/discover-wechat.mjs"
+    "api": "node server.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.555.0",

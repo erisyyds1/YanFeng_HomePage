@@ -12,6 +12,7 @@ const port = Number(process.env.PORT || 3001);
 loadEnvFile(envPath);
 
 const allowedCategories = new Set(['winter', 'anniversary', 'gma', 'daily']);
+const allowedImageCategories = new Set(['gallery', 'album']);
 
 createServer(async (req, res) => {
   try {
@@ -43,14 +44,86 @@ createServer(async (req, res) => {
       return sendJson(res, 201, video);
     }
 
-    const deleteVideoMatch = pathname.match(/^\/videos\/([^/]+)$/);
-    if (req.method === 'DELETE' && deleteVideoMatch) {
-      const id = decodeURIComponent(deleteVideoMatch[1]);
+    const videoMatch = pathname.match(/^\/videos\/([^/]+)$/);
+    if (req.method === 'PATCH' && videoMatch) {
+      const id = decodeURIComponent(videoMatch[1]);
+      const payload = await readJsonBody(req);
+      const video = normalizeVideo({ ...payload, id });
+      const db = await readDb();
+      const videos = db.videos || [];
+      const index = videos.findIndex((item) => String(item.id) === id);
+      if (index === -1) {
+        return sendJson(res, 404, { error: 'Video not found' });
+      }
+      videos[index] = video;
+      db.videos = videos;
+      await writeDb(db);
+      return sendJson(res, 200, video);
+    }
+
+    if (req.method === 'DELETE' && videoMatch) {
+      const id = decodeURIComponent(videoMatch[1]);
       const db = await readDb();
       const before = db.videos?.length || 0;
       db.videos = (db.videos || []).filter((video) => String(video.id) !== id);
       await writeDb(db);
       return sendJson(res, before === db.videos.length ? 404 : 204, null);
+    }
+
+    if (req.method === 'GET' && pathname === '/site-settings') {
+      const db = await readDb();
+      return sendJson(res, 200, getSiteSettings(db));
+    }
+
+    if (req.method === 'PATCH' && pathname === '/site-settings') {
+      const payload = await readJsonBody(req);
+      const db = await readDb();
+      db.siteSettings = normalizeSiteSettings({
+        ...getSiteSettings(db),
+        ...payload,
+      });
+      await writeDb(db);
+      return sendJson(res, 200, db.siteSettings);
+    }
+
+    if (req.method === 'GET' && pathname === '/media-images') {
+      const db = await readDb();
+      return sendJson(res, 200, db.mediaImages || []);
+    }
+
+    if (req.method === 'POST' && pathname === '/media-images') {
+      const payload = await readJsonBody(req);
+      const image = normalizeManagedImage(payload);
+      const db = await readDb();
+      db.mediaImages = [image, ...(db.mediaImages || [])];
+      await writeDb(db);
+      return sendJson(res, 201, image);
+    }
+
+    const mediaImageMatch = pathname.match(/^\/media-images\/([^/]+)$/);
+    if (req.method === 'PATCH' && mediaImageMatch) {
+      const id = decodeURIComponent(mediaImageMatch[1]);
+      const payload = await readJsonBody(req);
+      const image = normalizeManagedImage({ ...payload, id });
+      const db = await readDb();
+      const images = db.mediaImages || [];
+      const index = images.findIndex((item) => String(item.id) === id);
+      if (index === -1) {
+        return sendJson(res, 404, { error: 'Image not found' });
+      }
+      images[index] = image;
+      db.mediaImages = images;
+      await writeDb(db);
+      return sendJson(res, 200, image);
+    }
+
+    if (req.method === 'DELETE' && mediaImageMatch) {
+      const id = decodeURIComponent(mediaImageMatch[1]);
+      const db = await readDb();
+      const before = db.mediaImages?.length || 0;
+      db.mediaImages = (db.mediaImages || []).filter((image) => String(image.id) !== id);
+      await writeDb(db);
+      return sendJson(res, before === db.mediaImages.length ? 404 : 204, null);
     }
 
     if (req.method === 'POST' && pathname === '/chat-messages') {
@@ -79,7 +152,7 @@ function normalizePath(pathname) {
 
 function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 }
 
@@ -146,6 +219,47 @@ function normalizeVideo(payload) {
   };
 }
 
+function getSiteSettings(db) {
+  return normalizeSiteSettings(db.siteSettings || { mainGroupNumber: '737508445' });
+}
+
+function normalizeSiteSettings(payload) {
+  const mainGroupNumber = String(payload?.mainGroupNumber || '').trim();
+
+  if (!mainGroupNumber) {
+    throw badRequest('Main QQ group number is required');
+  }
+
+  return {
+    mainGroupNumber,
+  };
+}
+
+function normalizeManagedImage(payload) {
+  const title = String(payload?.title || '').trim();
+  const imageUrl = String(payload?.imageUrl || '').trim();
+  const category = String(payload?.category || '').trim();
+
+  if (!title) {
+    throw badRequest('Image title is required');
+  }
+
+  if (!imageUrl || !isAllowedImageUrl(imageUrl)) {
+    throw badRequest('A valid image URL is required');
+  }
+
+  if (!allowedImageCategories.has(category)) {
+    throw badRequest('Invalid image category');
+  }
+
+  return {
+    id: String(payload?.id || Date.now()),
+    title,
+    imageUrl,
+    category,
+  };
+}
+
 function badRequest(message) {
   const error = new Error(message);
   error.statusCode = 400;
@@ -156,6 +270,19 @@ function isAllowedBilibiliPlayerUrl(value) {
   try {
     const parsed = new URL(value);
     return parsed.protocol === 'https:' && parsed.hostname === 'player.bilibili.com';
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedImageUrl(value) {
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
   } catch {
     return false;
   }
