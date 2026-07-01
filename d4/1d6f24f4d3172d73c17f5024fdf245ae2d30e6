@@ -1,0 +1,133 @@
+docs/superpowers/specs/2026-07-01-go-api-minimal-migration-design.md
+  s_7f3e99f7f5796c::t_1bc2e439c2561c 1-50,52-55,82-114,125-152,154-170,172-173,175,178,180,183-197
+  s_7f3e99f7f5796c::t_5d566227578e2a 51,56-81,115-124,153,171,174,176-177,179,181-182 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4502acbb4652df32ec457e","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":51},{"Range":[56,81]},{"Range":[115,124]},{"Single":153},{"Single":171},{"Single":174},{"Range":[176,177]},{"Single":179},{"Range":[181,182]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d41d6f24f4d3172d73c17f5024fdf245ae2d30e6",
+  "prompts": {},
+  "sessions": {
+    "s_7f3e99f7f5796c": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a450086bb4652df32ec4412",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": null
+    }
+  },
+  "attestation_metadata": {
+    "docs/superpowers/specs/2026-07-01-go-api-minimal-migration-design.md": [
+      {
+        "hash": "s_7f3e99f7f5796c::t_5d566227578e2a",
+        "line_ranges": [
+          {
+            "Single": 51
+          },
+          {
+            "Range": [
+              56,
+              81
+            ]
+          },
+          {
+            "Range": [
+              115,
+              124
+            ]
+          },
+          {
+            "Single": 153
+          },
+          {
+            "Single": 171
+          },
+          {
+            "Single": 174
+          },
+          {
+            "Range": [
+              176,
+              177
+            ]
+          },
+          {
+            "Single": 179
+          },
+          {
+            "Range": [
+              181,
+              182
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4502acbb4652df32ec457e",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 51
+              },
+              {
+                "Range": [
+                  56,
+                  81
+                ]
+              },
+              {
+                "Range": [
+                  115,
+                  124
+                ]
+              },
+              {
+                "Single": 153
+              },
+              {
+                "Single": 171
+              },
+              {
+                "Single": 174
+              },
+              {
+                "Range": [
+                  176,
+                  177
+                ]
+              },
+              {
+                "Single": 179
+              },
+              {
+                "Range": [
+                  181,
+                  182
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_7f3e99f7f5796c": {
+      "tool": "trae",
+      "conversation_id": "6a450086bb4652df32ec4412",
+      "session_id": "6a450086bb4652df32ec4412",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_7f3e99f7f5796c::t_5d566227578e2a": {
+      "tool": "trae",
+      "conversation_id": "6a450086bb4652df32ec4412",
+      "session_id": "6a450086bb4652df32ec4412",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
