@@ -467,7 +467,7 @@ const App: React.FC = () => {
               style={getSecondaryPanelStyle(1)}
               className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
             >
-              <InfoPage />
+              <InfoPage onOpenGroups={() => showHomeSection('groups')} />
             </section>
 
             <section

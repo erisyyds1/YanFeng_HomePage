@@ -1,7 +1,12 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { BLACKBOARD_PANEL_IMAGE, INTEREST_GROUPS, OFFICIAL_GROUPS } from '../data/siteContent';
 
-const InfoPage: React.FC = () => {
+interface InfoPageProps {
+  onOpenGroups: () => void;
+}
+
+const InfoPage: React.FC<InfoPageProps> = ({ onOpenGroups }) => {
   return (
     <>
       <div className="pointer-events-none absolute inset-0 bg-black/48"></div>
@@ -95,6 +100,14 @@ const InfoPage: React.FC = () => {
                         </span>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={onOpenGroups}
+                      className="mt-5 inline-flex items-center gap-2 border border-[#c8322a]/75 bg-[#c8322a]/14 px-3.5 py-2 text-xs font-black tracking-[0.12em] text-white transition hover:bg-[#c8322a] hover:text-white"
+                    >
+                      更多官方组
+                      <ArrowRight className="h-3.5 w-3.5" strokeWidth={3} />
+                    </button>
                   </article>
 
                   <article className="relative min-h-[190px] overflow-hidden border border-[#7b3a2d]/50 bg-black/24 p-5 shadow-[6px_6px_0_rgb(0_0_0/0.28)] md:p-6">
@@ -108,6 +121,9 @@ const InfoPage: React.FC = () => {
                         </span>
                       ))}
                     </div>
+                    <span className="mt-5 inline-flex items-center gap-2 border border-white/18 bg-white/[0.04] px-3.5 py-2 text-xs font-black tracking-[0.12em] text-white/62">
+                      更多方向
+                    </span>
                   </article>
                 </div>
 

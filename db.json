@@ -1,8 +1,59 @@
 {
   "articles": [],
-  "videos": [],
+  "videos": [
+    {
+      "id": "1782876253536",
+      "title": "檐枫wota艺组 2025年冬日庆典【Re. 晴空】",
+      "url": "https://player.bilibili.com/player.html?isOutside=true&aid=115920580118197&bvid=BV1KekeBjECv&cid=35480601155&p=1",
+      "type": "bilibili",
+      "thumbnail": "/uploads/thumbnail/2026/50feaa6f-201f-4355-bc3e-7e258e372ce3.jpg",
+      "category": "winter"
+    }
+  ],
   "siteSettings": {
     "mainGroupNumber": "737508445"
   },
-  "mediaImages": []
+  "mediaImages": [
+    {
+      "id": "1782876399196",
+      "title": "组活",
+      "imageUrl": "/uploads/gallery/2026/00bdb7a4-57b2-4f77-a124-39dc5c3fefcb.jpg",
+      "category": "gallery"
+    },
+    {
+      "id": "1782876315365",
+      "title": "深空海",
+      "imageUrl": "/uploads/album/2026/fa7474c5-fb3f-471b-ae65-f2a18d384b27.png",
+      "category": "album"
+    }
+  ],
+  "uploads": [
+    {
+      "id": "00bdb7a4-57b2-4f77-a124-39dc5c3fefcb",
+      "key": "uploads/gallery/2026/00bdb7a4-57b2-4f77-a124-39dc5c3fefcb.jpg",
+      "url": "/uploads/gallery/2026/00bdb7a4-57b2-4f77-a124-39dc5c3fefcb.jpg",
+      "filename": "5710d0c04fc9c74b3d1f8cb8297fa803.jpg",
+      "contentType": "image/jpeg",
+      "byteSize": 592486,
+      "createdAt": "2026-07-01T03:26:38.940Z"
+    },
+    {
+      "id": "fa7474c5-fb3f-471b-ae65-f2a18d384b27",
+      "key": "uploads/album/2026/fa7474c5-fb3f-471b-ae65-f2a18d384b27.png",
+      "url": "/uploads/album/2026/fa7474c5-fb3f-471b-ae65-f2a18d384b27.png",
+      "filename": "ffb16645716d6cccf8751ff4453680f2.png",
+      "contentType": "image/png",
+      "byteSize": 894964,
+      "createdAt": "2026-07-01T03:25:15.109Z"
+    },
+    {
+      "id": "50feaa6f-201f-4355-bc3e-7e258e372ce3",
+      "key": "uploads/thumbnail/2026/50feaa6f-201f-4355-bc3e-7e258e372ce3.jpg",
+      "url": "/uploads/thumbnail/2026/50feaa6f-201f-4355-bc3e-7e258e372ce3.jpg",
+      "filename": "b7aa609061ce855f9d941561c5aa8a3e8d380155.jpg",
+      "contentType": "image/jpeg",
+      "byteSize": 28571,
+      "createdAt": "2026-07-01T03:24:13.517Z"
+    }
+  ]
 }

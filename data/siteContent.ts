@@ -56,7 +56,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
     description: '檐枫大型晚会中重要的节目来源。一起约舞、练舞、教学、排练节目，也会录制宅舞视频。',
     newcomerNote: '无论是否有基础，只要对宅舞感兴趣，都欢迎加入。',
     activities: ['日常约舞', '社舞教学', '群舞教学', '视频录制'],
-    image: '/image/group-dance.jpeg',
+    image: '/image/group-dance.jpg',
     icon: Music2
   },
   {

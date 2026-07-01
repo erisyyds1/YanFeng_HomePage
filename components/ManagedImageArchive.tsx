@@ -163,7 +163,7 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
             <RetroCard key={image.id} variant="paper" className="h-full">
               <div className="flex h-full flex-col rounded border-2 border-[var(--theme-border)] bg-white p-2 shadow-md">
                 <div className="aspect-[4/3] overflow-hidden rounded bg-black">
-                  <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-[1.03] hover:opacity-100" />
+                  <img src={image.imageUrl} alt={image.title} className="h-full w-full object-contain opacity-90 transition duration-500 hover:opacity-100" />
                 </div>
                 <div className="mt-4 flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">

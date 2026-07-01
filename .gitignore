@@ -13,6 +13,10 @@ dist
 dist-ssr
 *.local
 
+# Local uploaded files are development data. Production uploads live in R2.
+public/uploads/*
+!public/uploads/.gitkeep
+
 # Environment Variables (DO NOT COMMIT)
 .env
 .env.*

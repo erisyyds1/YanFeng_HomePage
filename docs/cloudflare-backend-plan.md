@@ -8,6 +8,7 @@ The project is currently a Vite React frontend with a local demo API:
 
 - Frontend: Vite, React, static assets in `public/`.
 - Local API: `server.mjs`.
+- Production API skeleton: `functions/api/[[path]].js`.
 - Local data: `db.json`.
 - API client base: `services/config.ts`.
 - Local development: `npm run api` starts `http://localhost:3001`; Vite proxies `/api` to that port.
@@ -19,6 +20,7 @@ The current API already maps well to production:
 | Site settings | `GET/PATCH /site-settings` | `GET/PATCH /api/site-settings` |
 | Videos | `GET/POST/PATCH/DELETE /videos` | `GET/POST/PATCH/DELETE /api/videos` |
 | Gallery and album images | `GET/POST/PATCH/DELETE /media-images` | `GET/POST/PATCH/DELETE /api/media-images` |
+| File upload | `POST /uploads` | `POST /api/uploads` |
 | Articles | `GET /articles` | `GET /api/articles` |
 | AI chat proxy | `POST /chat-messages` | `POST /api/chat-messages` |
 
@@ -144,7 +146,8 @@ The current hidden sunflower password is only a UI gate. Production needs backen
 
 Recommended first version:
 
-- `POST /api/admin/login` receives the hidden phrase.
+- The visible entry remains hidden: double-click the sunflower, submit the disguised message box, and enter edit mode only when the hidden phrase matches.
+- `POST /api/admin/login` receives the disguised message value.
 - Function compares it against a Cloudflare secret, for example `ADMIN_PASSWORD`.
 - Function returns a short-lived signed token.
 - Frontend stores the token in `sessionStorage`.
@@ -177,8 +180,11 @@ Suggested initial limits:
 - Allowed types: `image/jpeg`, `image/png`, `image/webp`.
 - Max file size: 8 MB after client-side compression.
 - Prefer WebP for new uploads.
+- Categories currently used by the UI: `gallery`, `album`, and `thumbnail`.
 
 Later, if large uploads become frequent, switch to presigned direct-to-R2 uploads.
+
+Local development stores uploaded files under `public/uploads`. That directory is ignored by Git except for `.gitkeep`. Production uploads should use R2 through the `MEDIA_BUCKET` binding.
 
 ## Frontend Changes Still Needed
 
@@ -201,15 +207,19 @@ The frontend already has service modules. The next frontend tasks are:
 6. Configure Pages Functions or Worker bindings:
    - `DB` for D1.
    - `MEDIA_BUCKET` for R2.
-7. Port `server.mjs` route logic to a Pages Function or Worker.
-8. Add admin auth.
-9. Add upload endpoint.
+7. Use `wrangler.toml.example` as the binding reference, then configure matching bindings in Cloudflare Pages.
+8. Configure secrets:
+   - `ADMIN_PASSWORD`
+   - `ADMIN_SESSION_SECRET`
+   - `DIFY_API_KEY`
+   - optional `DIFY_API_URL`
+9. Deploy the existing Pages Function skeleton in `functions/api/[[path]].js`.
 10. Deploy preview branch.
 11. Test:
     - Read site settings.
     - Edit QQ group number.
     - Add/edit/delete video.
-    - Upload image.
+    - Upload gallery, album, and video thumbnail images.
     - Add/edit/delete gallery or album image.
 12. Point the domain to the Cloudflare Pages production deployment.
 

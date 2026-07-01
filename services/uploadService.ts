@@ -11,7 +11,9 @@ export interface UploadedImage {
   byteSize: number;
 }
 
-export const uploadImageFile = async (file: File, category: ManagedImageCategory): Promise<UploadedImage | null> => {
+export type UploadImageCategory = ManagedImageCategory | 'thumbnail';
+
+export const uploadImageFile = async (file: File, category: UploadImageCategory): Promise<UploadedImage | null> => {
   try {
     const formData = new FormData();
     formData.append('file', file);

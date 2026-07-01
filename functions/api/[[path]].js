@@ -1,6 +1,7 @@
 const DEFAULT_MAIN_GROUP_NUMBER = '737508445';
 const ALLOWED_VIDEO_CATEGORIES = new Set(['winter', 'anniversary', 'gma', 'daily']);
 const ALLOWED_IMAGE_CATEGORIES = new Set(['gallery', 'album']);
+const ALLOWED_UPLOAD_CATEGORIES = new Set(['gallery', 'album', 'thumbnail']);
 const ALLOWED_UPLOAD_TYPES = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
@@ -280,7 +281,7 @@ async function uploadFile(request, env) {
     throw httpError(400, 'Image file is required');
   }
 
-  if (!ALLOWED_IMAGE_CATEGORIES.has(category)) {
+  if (!ALLOWED_UPLOAD_CATEGORIES.has(category)) {
     throw httpError(400, 'Invalid upload category');
   }
 

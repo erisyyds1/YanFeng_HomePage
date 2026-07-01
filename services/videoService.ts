@@ -2,6 +2,19 @@ import { VideoContent } from '../types';
 import { getAdminAuthHeaders } from './adminAuth';
 import { API_BASE_URL } from './config';
 
+export const fetchVideos = async (): Promise<VideoContent[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/videos`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch videos');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching videos:', error);
+    return [];
+  }
+};
+
 export const addVideo = async (video: Omit<VideoContent, 'id'>): Promise<VideoContent | null> => {
   try {
     const response = await fetch(`${API_BASE_URL}/videos`, {

@@ -1,18 +1,29 @@
 import { createServer } from 'node:http';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, 'db.json');
 const envPath = path.join(__dirname, '.env');
+const uploadRoot = path.join(__dirname, 'public', 'uploads');
 const port = Number(process.env.PORT || 3001);
 
 loadEnvFile(envPath);
 
+const adminPassword = process.env.ADMIN_PASSWORD || '18522';
+const adminTokens = new Map();
 const allowedCategories = new Set(['winter', 'anniversary', 'gma', 'daily']);
 const allowedImageCategories = new Set(['gallery', 'album']);
+const allowedUploadCategories = new Set(['gallery', 'album', 'thumbnail']);
+const allowedUploadTypes = new Map([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+]);
+const maxUploadBytes = 8 * 1024 * 1024;
 
 createServer(async (req, res) => {
   try {
@@ -25,6 +36,11 @@ createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     const pathname = normalizePath(url.pathname);
 
+    if (req.method === 'POST' && pathname === '/admin/login') {
+      const payload = await readJsonBody(req);
+      return sendJson(res, 200, createAdminSession(payload));
+    }
+
     if (req.method === 'GET' && pathname === '/articles') {
       const db = await readDb();
       return sendJson(res, 200, db.articles || []);
@@ -36,6 +52,7 @@ createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && pathname === '/videos') {
+      requireAdmin(req);
       const payload = await readJsonBody(req);
       const video = normalizeVideo(payload);
       const db = await readDb();
@@ -46,6 +63,7 @@ createServer(async (req, res) => {
 
     const videoMatch = pathname.match(/^\/videos\/([^/]+)$/);
     if (req.method === 'PATCH' && videoMatch) {
+      requireAdmin(req);
       const id = decodeURIComponent(videoMatch[1]);
       const payload = await readJsonBody(req);
       const video = normalizeVideo({ ...payload, id });
@@ -62,6 +80,7 @@ createServer(async (req, res) => {
     }
 
     if (req.method === 'DELETE' && videoMatch) {
+      requireAdmin(req);
       const id = decodeURIComponent(videoMatch[1]);
       const db = await readDb();
       const before = db.videos?.length || 0;
@@ -76,6 +95,7 @@ createServer(async (req, res) => {
     }
 
     if (req.method === 'PATCH' && pathname === '/site-settings') {
+      requireAdmin(req);
       const payload = await readJsonBody(req);
       const db = await readDb();
       db.siteSettings = normalizeSiteSettings({
@@ -92,6 +112,7 @@ createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && pathname === '/media-images') {
+      requireAdmin(req);
       const payload = await readJsonBody(req);
       const image = normalizeManagedImage(payload);
       const db = await readDb();
@@ -102,6 +123,7 @@ createServer(async (req, res) => {
 
     const mediaImageMatch = pathname.match(/^\/media-images\/([^/]+)$/);
     if (req.method === 'PATCH' && mediaImageMatch) {
+      requireAdmin(req);
       const id = decodeURIComponent(mediaImageMatch[1]);
       const payload = await readJsonBody(req);
       const image = normalizeManagedImage({ ...payload, id });
@@ -118,12 +140,19 @@ createServer(async (req, res) => {
     }
 
     if (req.method === 'DELETE' && mediaImageMatch) {
+      requireAdmin(req);
       const id = decodeURIComponent(mediaImageMatch[1]);
       const db = await readDb();
       const before = db.mediaImages?.length || 0;
       db.mediaImages = (db.mediaImages || []).filter((image) => String(image.id) !== id);
       await writeDb(db);
       return sendJson(res, before === db.mediaImages.length ? 404 : 204, null);
+    }
+
+    if (req.method === 'POST' && pathname === '/uploads') {
+      requireAdmin(req);
+      const upload = await saveUploadedFile(req);
+      return sendJson(res, 201, upload);
     }
 
     if (req.method === 'POST' && pathname === '/chat-messages') {
@@ -187,8 +216,103 @@ async function readJsonBody(req) {
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {
-    throw badRequest('Invalid JSON body');
+    throw httpError(400, 'Invalid JSON body');
   }
+}
+
+function createAdminSession(payload) {
+  const message = String(payload?.message || payload?.password || '').trim();
+  if (message !== adminPassword) {
+    throw httpError(401, 'Invalid admin password');
+  }
+
+  const token = `local-${randomUUID()}`;
+  const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 6;
+  adminTokens.set(token, expiresAt);
+  return {
+    token,
+    expiresAt,
+    configured: true,
+  };
+}
+
+function requireAdmin(req) {
+  const authorization = req.headers.authorization || '';
+  const token = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : '';
+  const expiresAt = adminTokens.get(token);
+
+  if (!expiresAt || expiresAt < Math.floor(Date.now() / 1000)) {
+    throw httpError(401, 'Admin token is required');
+  }
+}
+
+async function saveUploadedFile(req) {
+  const formRequest = new Request('http://localhost/uploads', {
+    method: 'POST',
+    headers: req.headers,
+    body: req,
+    duplex: 'half',
+  });
+  const formData = await formRequest.formData();
+  const file = formData.get('file');
+  const category = String(formData.get('category') || 'gallery').trim();
+
+  if (!file || typeof file.arrayBuffer !== 'function') {
+    throw httpError(400, 'Image file is required');
+  }
+
+  if (!allowedUploadCategories.has(category)) {
+    throw httpError(400, 'Invalid upload category');
+  }
+
+  const contentType = String(file.type || '').toLowerCase();
+  const extension = allowedUploadTypes.get(contentType);
+  if (!extension) {
+    throw httpError(400, 'Only JPG, PNG, and WebP uploads are allowed');
+  }
+
+  if (file.size > maxUploadBytes) {
+    throw httpError(400, 'Image must be 8 MB or smaller');
+  }
+
+  const id = randomUUID();
+  const year = String(new Date().getFullYear());
+  const relativePath = path.join('uploads', category, year, `${id}.${extension}`);
+  const outputPath = path.join(__dirname, 'public', relativePath);
+  const resolvedOutputPath = path.resolve(outputPath);
+  const resolvedUploadRoot = path.resolve(uploadRoot);
+
+  if (!resolvedOutputPath.startsWith(resolvedUploadRoot)) {
+    throw httpError(400, 'Invalid upload path');
+  }
+
+  await mkdir(path.dirname(resolvedOutputPath), { recursive: true });
+  await writeFile(resolvedOutputPath, Buffer.from(await file.arrayBuffer()));
+
+  const publicUrl = `/${relativePath.replaceAll(path.sep, '/')}`;
+  const db = await readDb();
+  db.uploads = [
+    {
+      id,
+      key: relativePath.replaceAll(path.sep, '/'),
+      url: publicUrl,
+      filename: String(file.name || `${id}.${extension}`),
+      contentType,
+      byteSize: file.size,
+      createdAt: new Date().toISOString(),
+    },
+    ...(db.uploads || []),
+  ];
+  await writeDb(db);
+
+  return {
+    id,
+    key: relativePath.replaceAll(path.sep, '/'),
+    url: publicUrl,
+    filename: String(file.name || `${id}.${extension}`),
+    contentType,
+    byteSize: file.size,
+  };
 }
 
 function normalizeVideo(payload) {
@@ -198,15 +322,19 @@ function normalizeVideo(payload) {
   const category = String(payload?.category || 'daily').trim();
 
   if (!title) {
-    throw badRequest('Video title is required');
+    throw httpError(400, 'Video title is required');
   }
 
   if (!url || !isAllowedBilibiliPlayerUrl(url)) {
-    throw badRequest('A valid Bilibili player URL is required');
+    throw httpError(400, 'A valid Bilibili player URL is required');
   }
 
   if (!allowedCategories.has(category)) {
-    throw badRequest('Invalid video category');
+    throw httpError(400, 'Invalid video category');
+  }
+
+  if (thumbnail && !isAllowedImageUrl(thumbnail)) {
+    throw httpError(400, 'A valid thumbnail image URL is required');
   }
 
   return {
@@ -227,7 +355,7 @@ function normalizeSiteSettings(payload) {
   const mainGroupNumber = String(payload?.mainGroupNumber || '').trim();
 
   if (!mainGroupNumber) {
-    throw badRequest('Main QQ group number is required');
+    throw httpError(400, 'Main QQ group number is required');
   }
 
   return {
@@ -241,15 +369,15 @@ function normalizeManagedImage(payload) {
   const category = String(payload?.category || '').trim();
 
   if (!title) {
-    throw badRequest('Image title is required');
+    throw httpError(400, 'Image title is required');
   }
 
   if (!imageUrl || !isAllowedImageUrl(imageUrl)) {
-    throw badRequest('A valid image URL is required');
+    throw httpError(400, 'A valid image URL is required');
   }
 
   if (!allowedImageCategories.has(category)) {
-    throw badRequest('Invalid image category');
+    throw httpError(400, 'Invalid image category');
   }
 
   return {
@@ -258,12 +386,6 @@ function normalizeManagedImage(payload) {
     imageUrl,
     category,
   };
-}
-
-function badRequest(message) {
-  const error = new Error(message);
-  error.statusCode = 400;
-  return error;
 }
 
 function isAllowedBilibiliPlayerUrl(value) {
@@ -296,7 +418,7 @@ async function proxyDifyChat(payload) {
     return {
       status: 200,
       body: {
-        answer: 'AI 助手还没有配置服务端 Dify Key。请在 .env 中设置 DIFY_API_KEY 后重启 API 服务。',
+        answer: 'AI assistant is not configured yet.',
       },
     };
   }
@@ -335,7 +457,7 @@ async function proxyDifyChat(payload) {
     return {
       status: 502,
       body: {
-        answer: '连接社团 AI 服务失败，请稍后再试。',
+        answer: 'Chat service is temporarily unavailable.',
       },
     };
   }
@@ -343,11 +465,17 @@ async function proxyDifyChat(payload) {
   return {
     status: 200,
     body: {
-      answer: data.answer || '我暂时没有组织好答案，请换个问法再试试。',
+      answer: data.answer || 'I do not have an answer yet.',
       conversation_id: data.conversation_id,
       message_id: data.message_id,
     },
   };
+}
+
+function httpError(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
 }
 
 function loadEnvFile(filePath) {

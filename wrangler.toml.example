@@ -1,0 +1,12 @@
+name = "yanfeng-club-portal"
+compatibility_date = "2026-07-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yanfeng-club"
+database_id = "replace-with-cloudflare-d1-id"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "yanfeng-media"
