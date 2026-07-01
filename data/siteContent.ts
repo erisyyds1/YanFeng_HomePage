@@ -42,7 +42,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '番剧鉴赏组',
     label: 'ANIME',
-    qq: '924171013',
+    qq: '',
     description: '围绕动画新番、经典作品和观影交流展开，一起追番、补番、讨论作品，也可以组织放映与安利。每年年末会组织一次大型评奖活动GMA。',
     newcomerNote: '适合喜欢看番、想找人一起讨论剧情演出，或者刚开始接触动画的新朋友。',
     activities: ['新番交流', '作品安利', '放映讨论', '补番推荐', 'GMA'],
@@ -52,7 +52,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '宅舞组',
     label: 'DANCE',
-    qq: '1018528156',
+    qq: '',
     description: '檐枫大型晚会中重要的节目来源。一起约舞、练舞、教学、排练节目，也会录制宅舞视频。',
     newcomerNote: '无论是否有基础，只要对宅舞感兴趣，都欢迎加入。',
     activities: ['日常约舞', '社舞教学', '群舞教学', '视频录制'],
@@ -62,7 +62,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '创作组',
     label: 'CREATE',
-    qq: '496866658',
+    qq: '',
     description: '热爱绘画、设计、文字、音乐、后期等同学们的大家庭，涵盖泛 ACGN 文化相关创作。',
     newcomerNote: '可以分享作品，也可以从观摩、学习、协作开始。',
     activities: ['绘画设计', '手书', '视频剪辑', '作品交流', '手书创作'],
@@ -72,7 +72,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '翻唱组',
     label: 'VOCAL',
-    qq: '745254525',
+    qq: '',
     description: '檐枫大型晚会中重要的节目来源。面向所有热爱 ACGN 相关歌曲、喜欢唱歌并愿意唱歌的同学。',
     newcomerNote: '觉得自己水平还不够也没关系，唱得开心才是最重要的目标。',
     activities: ['新生歌会', 'KTV 聚会', '翻唱交流', '晚会节目'],
@@ -82,7 +82,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '舞台剧组',
     label: 'STAGE',
-    qq: '912127654',
+    qq: '',
     description: '爱好表演、舞台剧、剧本创作和 cos 的大家聚在一起玩的地方。每次大型晚会都会提供一到两台精彩舞台剧',
     newcomerNote: '对表演、剧本、舞台或幕后协作感兴趣都可以来。',
     activities: ['剧本创作', '舞台排练', '角色演出', 'Cos 协作'],
@@ -92,7 +92,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: 'Delta 组',
     label: 'DELTA',
-    qq: '290772952',
+    qq: '',
     description: '提供创作与分享的平台，也协助事务组进行社团活动的预热与宣传。',
     newcomerNote: '适合分享作品、写杂谈、做采访、安利动漫游戏小说等泛 ACGN 内容。',
     activities: ['文字创作', '作品安利', '记者采访', '推文放送'],
@@ -102,7 +102,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: 'Wota 艺组',
     label: 'WOTA',
-    qq: '876209001',
+    qq: '',
     description: '用光棒描绘光与影，为喜欢的动画、偶像以及歌曲应援。每周组活都会进行教学和练习，也会参与晚会表演和进行各种企划视频录制。',
     newcomerNote: '无需基础，来了就教，包教包会。',
     activities: ['新人友好', '组活练习', '晚会表演', '企划视频'],
@@ -112,7 +112,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '轻音组',
     label: 'BAND',
-    qq: '914316313',
+    qq: '',
     description: '面向乐器、乐队和 ACGN 音乐爱好者，用于交流、资源分享、技术讨论和合作组队。参与晚会表演，不定时会有轻音组live专场。',
     newcomerNote: '乐器高手、练习新手，甚至只是想点歌听的纯路人都欢迎。',
     activities: ['琴技交流', '乐队组建', '专场 Live', 'ACGN 音乐讨论'],
@@ -122,7 +122,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: 'VOCALOID 组',
     label: 'VOCALOID',
-    qq: '361980809',
+    qq: '',
     description: '以泛 VOCALOID 创作为中心，也交流 Synthesizer V、CeVIO、UTAU 等音声合成内容。',
     newcomerNote: '术术人、创作者、音乐萌新或只是想找到同好，都可以获得独特体验。',
     activities: ['作品翻调', '原创曲目', '调校教学', '作编曲教学'],
@@ -132,7 +132,7 @@ export const OFFICIAL_GROUPS: OfficialGroup[] = [
   {
     title: '事务组',
     label: 'SUPPORT',
-    qq: '1054869730',
+    qq: '',
     description: '协助举办社团内各类大小活动，是冬日庆典、社庆、百团等活动顺利进行的重要后勤力量。',
     newcomerNote: '适合愿意做组织、协调、设备调试、后勤支持和现场执行的同学。',
     activities: ['设备调试', '后勤支持', '活动协助', '大型活动保障'],

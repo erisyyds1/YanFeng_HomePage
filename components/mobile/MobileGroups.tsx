@@ -17,6 +17,7 @@ const MobileGroups: React.FC<MobileGroupsProps> = ({ selectedGroup, copiedGroupT
   const GroupIcon = activeGroup.icon;
   const canCopy = activeGroup.qq.trim() !== '' && activeGroup.qq !== '待补充';
   const copied = copiedGroupTitle === activeGroup.title;
+  const groupNumberLabel = canCopy ? activeGroup.qq : '暂不公开';
 
   return (
     <section id="groups" data-mobile-section="groups" className="relative overflow-hidden bg-[#0b0b0b] px-5 py-20">
@@ -79,7 +80,7 @@ const MobileGroups: React.FC<MobileGroupsProps> = ({ selectedGroup, copiedGroupT
           <div className="mt-5 border border-white/12 bg-black/48 p-4">
             <p className="font-mono text-[10px] font-black uppercase tracking-[0.26em] text-[#c8322a]">QQ GROUP</p>
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="min-w-0 break-all font-mono text-2xl font-black tracking-[0.08em] text-white">{activeGroup.qq}</span>
+              <span className="min-w-0 break-all font-mono text-2xl font-black tracking-[0.08em] text-white">{groupNumberLabel}</span>
               <button
                 type="button"
                 onClick={() => void onCopyGroup(activeGroup)}

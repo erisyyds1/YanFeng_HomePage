@@ -15,6 +15,7 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
   const GroupIcon = activeGroup.icon;
   const activeGroupCanCopy = activeGroup.qq.trim() !== '' && activeGroup.qq !== '待补充';
   const activeGroupCopied = copiedGroupTitle === activeGroup.title;
+  const activeGroupNumberLabel = activeGroupCanCopy ? activeGroup.qq : '暂不公开';
 
   return (
     <div className="mx-auto flex h-full min-h-0 max-w-[1600px] flex-col">
@@ -71,7 +72,7 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
                 <div className="flex min-h-[72px] overflow-hidden bg-[#101010] text-white shadow-[4px_4px_0_rgb(0_0_0/0.28)]">
                   <div className="flex flex-col justify-center border-l-4 border-[#c8322a] px-4 py-2">
                     <p className="text-[10px] font-black tracking-[0.26em] text-[#c8322a]">QQ GROUP</p>
-                    <p className="mt-1 font-mono text-2xl font-black leading-none text-white/90 md:text-3xl">{activeGroup.qq}</p>
+                    <p className="mt-1 font-mono text-2xl font-black leading-none text-white/90 md:text-3xl">{activeGroupNumberLabel}</p>
                   </div>
                   <button
                     type="button"
