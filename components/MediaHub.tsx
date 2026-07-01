@@ -20,14 +20,14 @@ export const MEDIA_ENTRIES: MediaEntry[] = [
     id: 'videos',
     title: '视频展示',
     label: 'VIDEOS',
-    description: '社庆、冬日庆典、GMA、组活与舞台录像。',
+    description: '社庆、冬日庆典、GMA与活动录像。',
     icon: Video
   },
   {
     id: 'vocaloid',
     title: 'V组专辑',
     label: 'VOCALOID',
-    description: 'VOCALOID 组原创、翻调、合作曲目与作品集合。',
+    description: 'VOCALOID 组原创作品集合。',
     icon: Music2
   },
   {

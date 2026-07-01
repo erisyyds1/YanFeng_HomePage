@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { useIsMobileViewport } from './hooks/useIsMobileViewport';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -8,10 +9,23 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
+
+const RootFrame: React.FC = () => {
+  const isMobileViewport = useIsMobileViewport();
+
+  if (isMobileViewport) {
+    return <App />;
+  }
+
+  return (
     <div className="site-zoom-frame">
       <App />
     </div>
+  );
+};
+
+root.render(
+  <React.StrictMode>
+    <RootFrame />
   </React.StrictMode>
 );

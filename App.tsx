@@ -5,6 +5,7 @@ import type { AnchorId, OfficialGroup } from './types';
 import { AppTheme } from './types';
 import { copyText } from './utils/clipboard';
 import { useEditMode } from './hooks/useEditMode';
+import { useIsMobileViewport } from './hooks/useIsMobileViewport';
 import { useManagedImages } from './hooks/useManagedImages';
 import { useSiteSettings } from './hooks/useSiteSettings';
 
@@ -21,6 +22,7 @@ import GroupsPage from './pages/GroupsPage';
 import HomePage from './pages/HomePage';
 import InfoPage from './pages/InfoPage';
 import JoinPage from './pages/JoinPage';
+import MobileHomePage from './pages/MobileHomePage';
 
 const SITE_FOOTER_HEIGHT = 'clamp(300px, 38dvh, 420px)';
 const PAGE_TRANSITION_MS = 1180;
@@ -30,6 +32,7 @@ const App: React.FC = () => {
   const editMode = useEditMode();
   const siteSettings = useSiteSettings();
   const imageManager = useManagedImages();
+  const isMobileViewport = useIsMobileViewport();
 
   const [selectedGroup, setSelectedGroup] = useState(0);
   const [copiedGroupTitle, setCopiedGroupTitle] = useState<string | null>(null);
@@ -38,6 +41,7 @@ const App: React.FC = () => {
   const [outgoingScreen, setOutgoingScreen] = useState<AnchorId | null>(null);
   const [transitionDirection, setTransitionDirection] = useState(0);
   const [footerVisible, setFooterVisible] = useState(false);
+  const [radioPlaying, setRadioPlaying] = useState(false);
 
   const activeScreenRef = useRef<AnchorId>('home');
   const activeMediaEntryRef = useRef<MediaContentId | null>(null);
@@ -101,14 +105,29 @@ const App: React.FC = () => {
     try {
       await audio.play();
       radioHasStartedRef.current = true;
+      setRadioPlaying(true);
       removeRadioAutoPlayListeners();
       return true;
     } catch (error) {
       console.warn('YANFENG RADIO playback was blocked:', error);
+      setRadioPlaying(false);
       return false;
     } finally {
       radioPlayAttemptRef.current = false;
     }
+  };
+
+  const toggleRadio = async () => {
+    const audio = radioAudioRef.current;
+    if (!audio) return;
+
+    if (!audio.paused) {
+      audio.pause();
+      setRadioPlaying(false);
+      return;
+    }
+
+    await playRadio();
   };
 
   useEffect(() => {
@@ -118,24 +137,37 @@ const App: React.FC = () => {
     audio.volume = 0.35;
     audio.loop = true;
 
-    const handleFirstClick = () => {
+    const shouldIgnoreAutoPlayEvent = (event: Event) => {
+      const target = event.target;
+      return target instanceof Element && Boolean(target.closest('[data-radio-control="true"]'));
+    };
+
+    const handleFirstGesture = (event: Event) => {
+      if (shouldIgnoreAutoPlayEvent(event)) return;
+
       if (radioHasStartedRef.current) {
         removeRadioAutoPlayListeners();
         return;
       }
       void playRadio();
     };
-    const clickAutoPlayOptions: AddEventListenerOptions = { capture: true };
+    const clickAutoPlayOptions: AddEventListenerOptions = { capture: !isMobileViewport };
+    const touchAutoPlayOptions: AddEventListenerOptions = { passive: true };
 
     const cleanup = () => {
-      window.removeEventListener('click', handleFirstClick, clickAutoPlayOptions);
+      window.removeEventListener('click', handleFirstGesture, clickAutoPlayOptions);
+      window.removeEventListener('touchstart', handleFirstGesture, touchAutoPlayOptions);
     };
 
     radioAutoPlayCleanupRef.current = cleanup;
-    window.addEventListener('click', handleFirstClick, clickAutoPlayOptions);
+    window.addEventListener('click', handleFirstGesture, clickAutoPlayOptions);
+
+    if (isMobileViewport) {
+      window.addEventListener('touchstart', handleFirstGesture, touchAutoPlayOptions);
+    }
 
     return cleanup;
-  }, []);
+  }, [isMobileViewport]);
 
   const goToScreen = (target: AnchorId) => {
     const current = activeScreenRef.current;
@@ -190,6 +222,10 @@ const App: React.FC = () => {
     }
   };
 
+  const closeMobileMediaEntry = () => {
+    setActiveMediaEntry(null);
+  };
+
   const handlePagerWheel = (event: React.WheelEvent<HTMLElement>) => {
     if (activeMediaEntryRef.current) return;
 
@@ -239,6 +275,8 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (isMobileViewport) return;
+
     const handleKeyDown = (event: KeyboardEvent) => {
       if (activeMediaEntryRef.current) {
         if (event.key === 'Escape') closeMediaEntry();
@@ -281,7 +319,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isMobileViewport]);
 
   const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
     const touch = event.touches[0];
@@ -351,6 +389,29 @@ const App: React.FC = () => {
     if (outgoingScreen === screen) return 'outgoing';
     return 'idle';
   };
+
+  if (isMobileViewport) {
+    return (
+      <>
+        <MobileHomePage
+          selectedGroup={selectedGroup}
+          copiedGroupTitle={copiedGroupTitle}
+          mainGroupNumber={mainGroupNumber}
+          joinGroupCopied={joinGroupCopied}
+          activeMediaEntry={activeMediaEntry}
+          radioPlaying={radioPlaying}
+          imageManager={imageManager}
+          onSelectGroup={setSelectedGroup}
+          onCopyGroup={copyGroupNumber}
+          onCopyJoinGroupNumber={siteSettings.copyJoinGroupNumber}
+          onOpenMediaEntry={openMediaEntry}
+          onCloseMediaEntry={closeMobileMediaEntry}
+          onToggleRadio={toggleRadio}
+        />
+        <audio ref={radioAudioRef} src="/music/bgm.mp3" preload="none" loop />
+      </>
+    );
+  }
 
   return (
     <div className="site-viewport overflow-hidden bg-[#080808] font-sans text-[#f6f0dc] selection:bg-[#c8322a] selection:text-white">

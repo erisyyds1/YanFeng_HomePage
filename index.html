@@ -132,6 +132,47 @@
       height: var(--site-viewport-height);
     }
 
+    .mobile-tab-scroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .mobile-tab-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --site-scale: 1;
+        --site-viewport-width: 100vw;
+        --site-viewport-height: 100dvh;
+      }
+
+      html,
+      body,
+      #root {
+        max-width: 100%;
+        overflow: hidden;
+      }
+
+      .site-zoom-frame,
+      .site-viewport,
+      .site-full-panel {
+        width: 100vw;
+        height: 100dvh;
+      }
+
+      .site-zoom-frame {
+        transform: none;
+      }
+
+      .mobile-site {
+        width: 100vw;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+    }
+
     .site-media-stage {
       min-height: calc(var(--site-viewport-height) - 9rem);
     }
