@@ -6,7 +6,7 @@
       "title": "檐枫wota艺组 2025年冬日庆典【Re. 晴空】",
       "url": "https://player.bilibili.com/player.html?isOutside=true&aid=115920580118197&bvid=BV1KekeBjECv&cid=35480601155&p=1",
       "type": "bilibili",
-      "thumbnail": "/uploads/thumbnail/2026/50feaa6f-201f-4355-bc3e-7e258e372ce3.jpg",
+      "thumbnail": "/uploads/thumbnail/2026/053a8204-f903-453e-888c-3c68e7238531.jpg",
       "category": "winter"
     }
   ],
@@ -17,17 +17,44 @@
     {
       "id": "1782876399196",
       "title": "组活",
-      "imageUrl": "/uploads/gallery/2026/00bdb7a4-57b2-4f77-a124-39dc5c3fefcb.jpg",
+      "imageUrl": "/uploads/gallery/2026/bbf43c2e-e457-46cd-846c-65f6408ab933.jpg",
       "category": "gallery"
     },
     {
       "id": "1782876315365",
       "title": "深空海",
-      "imageUrl": "/uploads/album/2026/fa7474c5-fb3f-471b-ae65-f2a18d384b27.png",
+      "imageUrl": "/uploads/album/2026/a92b4b06-0b03-4fa5-b623-64bbf34be233.png",
       "category": "album"
     }
   ],
   "uploads": [
+    {
+      "id": "bbf43c2e-e457-46cd-846c-65f6408ab933",
+      "key": "uploads/gallery/2026/bbf43c2e-e457-46cd-846c-65f6408ab933.jpg",
+      "url": "/uploads/gallery/2026/bbf43c2e-e457-46cd-846c-65f6408ab933.jpg",
+      "filename": "5710d0c04fc9c74b3d1f8cb8297fa803.jpg",
+      "contentType": "image/jpeg",
+      "byteSize": 592486,
+      "createdAt": "2026-07-01T04:04:28.491Z"
+    },
+    {
+      "id": "a92b4b06-0b03-4fa5-b623-64bbf34be233",
+      "key": "uploads/album/2026/a92b4b06-0b03-4fa5-b623-64bbf34be233.png",
+      "url": "/uploads/album/2026/a92b4b06-0b03-4fa5-b623-64bbf34be233.png",
+      "filename": "ffb16645716d6cccf8751ff4453680f2.png",
+      "contentType": "image/png",
+      "byteSize": 894964,
+      "createdAt": "2026-07-01T04:04:15.297Z"
+    },
+    {
+      "id": "053a8204-f903-453e-888c-3c68e7238531",
+      "key": "uploads/thumbnail/2026/053a8204-f903-453e-888c-3c68e7238531.jpg",
+      "url": "/uploads/thumbnail/2026/053a8204-f903-453e-888c-3c68e7238531.jpg",
+      "filename": "b7aa609061ce855f9d941561c5aa8a3e8d380155.jpg",
+      "contentType": "image/jpeg",
+      "byteSize": 28571,
+      "createdAt": "2026-07-01T04:01:39.751Z"
+    },
     {
       "id": "00bdb7a4-57b2-4f77-a124-39dc5c3fefcb",
       "key": "uploads/gallery/2026/00bdb7a4-57b2-4f77-a124-39dc5c3fefcb.jpg",
