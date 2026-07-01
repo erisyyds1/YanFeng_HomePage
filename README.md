@@ -51,6 +51,12 @@ DIFY_API_URL=https://api.dify.ai/v1
 本地 API 由 `server.mjs` 提供：
 
 - `GET /articles`
+- `GET /wechat-articles`
+- `GET /wechat-articles/admin`
+- `POST /wechat-articles/parse`
+- `POST /wechat-articles`
+- `PATCH /wechat-articles/:id`
+- `DELETE /wechat-articles/:id`
 - `GET /videos`
 - `POST /videos`
 - `PATCH /videos/:id`

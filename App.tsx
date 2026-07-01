@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { WECHAT_ARTICLES } from './constants';
 import { SECONDARY_BG_IMAGE, SCREEN_IDS } from './data/siteContent';
 import type { AnchorId, OfficialGroup } from './types';
 import { AppTheme } from './types';
@@ -354,7 +353,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-[#080808] font-sans text-[#f6f0dc] selection:bg-[#c8322a] selection:text-white">
+    <div className="site-viewport overflow-hidden bg-[#080808] font-sans text-[#f6f0dc] selection:bg-[#c8322a] selection:text-white">
       <div className="checker-bg pointer-events-none fixed inset-0 opacity-[0.08]"></div>
 
       <AdminOverlays
@@ -384,7 +383,7 @@ const App: React.FC = () => {
       <SiteHeader activeScreen={activeScreen} onNavigate={showHomeSection} />
 
       {activeMedia ? (
-        <main ref={mediaPageRef} className="h-[100dvh] overflow-y-auto px-5 pb-20 pt-28 md:px-10">
+        <main ref={mediaPageRef} className="site-full-panel overflow-y-auto px-5 pb-20 pt-28 md:px-10">
           <div className="mx-auto max-w-[1500px]">
             <div className="mb-8 flex flex-col gap-5 border-b border-white/15 pb-6">
               <button
@@ -427,7 +426,7 @@ const App: React.FC = () => {
             </div>
 
             {activeMediaEntry === 'videos' && <EventGallery currentTheme={AppTheme.DEFAULT} isEditMode={isEditMode} />}
-            {activeMediaEntry === 'wechat' && <WechatArchive articles={WECHAT_ARTICLES} />}
+            {activeMediaEntry === 'wechat' && <WechatArchive isEditMode={isEditMode} />}
             {activeMediaEntry === 'gallery' && (
               <ManagedImageArchive category="gallery" activeMedia={activeMedia} isEditMode={isEditMode} imageManager={imageManager} />
             )}
@@ -441,7 +440,7 @@ const App: React.FC = () => {
           onWheel={handlePagerWheel}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="relative h-[100dvh] overflow-hidden"
+          className="site-full-panel relative overflow-hidden"
         >
           <div
             className="relative z-10 h-full w-full overflow-hidden bg-[#080808]"
@@ -455,7 +454,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'home'}
               data-state={getPanelState('home')}
               style={getPanelStyle(0)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden pt-28 lg:pt-20"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden pt-28 lg:pt-20"
             >
               <HomePage onNavigate={showHomeSection} />
             </section>
@@ -465,7 +464,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'about'}
               data-state={getPanelState('about')}
               style={getSecondaryPanelStyle(1)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden border-y border-white/10 bg-[#090909] px-5 py-24 md:px-10"
             >
               <InfoPage onOpenGroups={() => showHomeSection('groups')} />
             </section>
@@ -475,7 +474,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'groups'}
               data-state={getPanelState('groups')}
               style={getSecondaryPanelStyle(2)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] px-5 pb-10 pt-24 md:px-10"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden bg-[#080808] px-5 pb-10 pt-24 md:px-10"
             >
               <GroupsPage
                 selectedGroup={selectedGroup}
@@ -490,7 +489,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'activities'}
               data-state={getPanelState('activities')}
               style={getSecondaryPanelStyle(3)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden bg-[#101010] px-5 py-24 md:px-10"
             >
               <ActivitiesPage />
             </section>
@@ -500,7 +499,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'media'}
               data-state={getPanelState('media')}
               style={getSecondaryPanelStyle(4)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden bg-[#080808] pb-0 pt-24 md:pt-28"
             >
               <div className="h-full w-full">
                 <MediaHub onOpenEntry={openMediaEntry} />
@@ -512,7 +511,7 @@ const App: React.FC = () => {
               data-active={activeScreen === 'join'}
               data-state={getPanelState('join')}
               style={getPanelStyle(5)}
-              className="page-panel absolute inset-0 h-[100dvh] w-full overflow-hidden bg-[#080808] text-white"
+              className="page-panel absolute inset-0 h-full w-full overflow-hidden bg-[#080808] text-white"
             >
               <JoinPage
                 mainGroupNumber={mainGroupNumber}

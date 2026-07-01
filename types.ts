@@ -45,6 +45,17 @@ export interface NewsItem {
   coverUrl?: string;
 }
 
+export interface WechatArticle {
+  id: string;
+  title: string;
+  summary: string;
+  coverUrl?: string;
+  wechatUrl: string;
+  publishedAt: string;
+  isPublished: boolean;
+  sortOrder: number;
+}
+
 export type VideoCategory = 'winter' | 'anniversary' | 'gma' | 'daily';
 
 export interface VideoContent {

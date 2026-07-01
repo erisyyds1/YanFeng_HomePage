@@ -59,6 +59,22 @@ WHERE external_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_articles_date
 ON articles (date DESC, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS wechat_articles (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL DEFAULT '',
+  cover_url TEXT,
+  wechat_url TEXT NOT NULL,
+  published_at TEXT,
+  is_published INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_wechat_articles_public_sort
+ON wechat_articles (is_published, sort_order DESC, published_at DESC, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS uploads (
   id TEXT PRIMARY KEY,
   r2_key TEXT NOT NULL UNIQUE,

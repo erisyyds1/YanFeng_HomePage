@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit3, Image as ImageIcon, ImagePlus, Trash2, UploadCloud, X } from 'lucide-react';
+import { Edit3, Image as ImageIcon, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import type { ManagedImageCategory } from '../types';
 import type { MediaEntry } from './MediaHub';
 import type { ManagedImagesController } from '../hooks/useManagedImages';
@@ -15,7 +15,8 @@ interface ManagedImageArchiveProps {
 const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, activeMedia, isEditMode, imageManager }) => {
   const MediaIcon = activeMedia.icon;
   const images = imageManager.managedImages.filter((image) => image.category === category);
-  const emptyText = category === 'album' ? '暂时还没有专辑图片' : '暂时还没有画集图片';
+  const itemLabel = category === 'album' ? '专辑图片' : '图集图片';
+  const emptyText = category === 'album' ? '暂时还没有专辑图片' : '暂时还没有图集图片';
   const imageFormActive = imageManager.imageFormCategory === category;
   const previewUrl = imageManager.imageUploadPreviewUrl || imageManager.imageFormUrl;
   const fileInputId = `managed-image-upload-${category}`;
@@ -26,50 +27,41 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
   };
 
   return (
-    <div className="min-h-[520px] border border-white/12 bg-black/38 p-5 shadow-[12px_12px_0_rgb(0_0_0/0.22)]">
-      <div className="flex flex-col gap-5 border-b border-white/12 pb-5 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-end gap-4">
-          <span className="flex h-16 w-16 items-center justify-center bg-[#c8322a] text-white">
-            <MediaIcon className="h-8 w-8" />
-          </span>
+    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
+      <div className="flex flex-col gap-6 border-b-4 border-dashed border-[var(--theme-border)] pb-8">
+        <div className="flex flex-col items-end justify-between gap-4 md:flex-row">
           <div>
-            <p className="text-xs font-black tracking-[0.34em] text-[#c8322a]">{activeMedia.label}</p>
-            <h3 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white md:text-5xl">{activeMedia.title}</h3>
+            <h2 className="font-retro text-4xl text-[var(--theme-primary)]">{activeMedia.title}</h2>
+            <p className="mt-2 font-bold text-[var(--theme-accent)]">{activeMedia.label} ARCHIVE</p>
           </div>
-        </div>
 
-        {isEditMode && (
-          <button
-            type="button"
-            onClick={imageFormActive ? imageManager.resetManagedImageForm : () => imageManager.openManagedImageForm(category)}
-            className="flex w-fit items-center gap-2 rounded-lg bg-[#c8322a] px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0px_#000] transition hover:-translate-y-0.5 hover:bg-white hover:text-[#c8322a]"
-          >
-            {imageFormActive ? <X className="h-4 w-4" /> : <ImagePlus className="h-4 w-4" />}
-            {imageFormActive ? '收起表单' : '添加图片'}
-          </button>
-        )}
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={imageFormActive ? imageManager.resetManagedImageForm : () => imageManager.openManagedImageForm(category)}
+              className="flex items-center gap-2 rounded-lg bg-[var(--theme-primary)] px-4 py-3 text-sm font-black text-white shadow-[4px_4px_0px_var(--theme-border)] transition hover:-translate-y-0.5"
+            >
+              {imageFormActive ? <X size={18} /> : <Plus size={18} />}
+              {imageFormActive ? '收起表单' : `添加${itemLabel}`}
+            </button>
+          )}
+        </div>
       </div>
 
       {imageManager.managedImageNotice && (
-        <p className="mt-5 border border-[#c8322a]/45 bg-[#c8322a]/12 px-4 py-3 text-sm font-bold text-white/72">
+        <p className="border border-[#c8322a]/45 bg-[#c8322a]/12 px-4 py-3 text-sm font-bold text-white/72">
           {imageManager.managedImageNotice}
         </p>
       )}
 
       {isEditMode && imageFormActive && (
-        <RetroCard variant="ticket" className="my-6">
+        <RetroCard variant="ticket" className="mb-8">
           <form onSubmit={imageManager.submitManagedImage} className="space-y-4">
             <h3 className="mb-4 text-xl font-bold text-[var(--theme-primary)]">
-              {imageManager.editingImageId
-                ? category === 'album'
-                  ? '编辑专辑图片'
-                  : '编辑画集图片'
-                : category === 'album'
-                  ? '添加专辑图片'
-                  : '添加画集图片'}
+              {imageManager.editingImageId ? `编辑${itemLabel}` : `添加${itemLabel}`}
             </h3>
 
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-[var(--theme-border)]">图片标题</label>
@@ -79,7 +71,7 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
                       type="text"
                       value={imageManager.imageFormTitle}
                       onChange={(event) => imageManager.setImageFormTitle(event.target.value)}
-                      placeholder={category === 'album' ? '输入专辑图片标题...' : '输入画集图片标题...'}
+                      placeholder={`输入${itemLabel}标题...`}
                       className="w-full bg-transparent text-black outline-none"
                     />
                   </div>
@@ -116,12 +108,13 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
 
               <div className="space-y-2">
                 <p className="text-sm font-bold text-[var(--theme-border)]">预览</p>
-                <div className="grid min-h-[220px] place-items-center overflow-hidden rounded border-2 border-[var(--theme-border)] bg-black">
+                <div className="grid min-h-[240px] place-items-center overflow-hidden rounded border-2 border-[var(--theme-border)] bg-black">
                   {previewUrl ? (
-                    <img src={previewUrl} alt="图片预览" className="h-full max-h-[260px] w-full object-contain" />
+                    <img src={previewUrl} alt="图片预览" className="h-full max-h-[280px] w-full object-contain" />
                   ) : (
-                    <div className="px-4 text-center text-sm font-bold text-white/45">
-                      选择图片后这里会显示预览
+                    <div className="px-5 text-center">
+                      <ImageIcon className="mx-auto h-10 w-10 text-white/28" />
+                      <p className="mt-3 text-sm font-bold text-white/45">选择图片后这里会显示预览</p>
                     </div>
                   )}
                 </div>
@@ -158,12 +151,16 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
       )}
 
       {images.length > 0 ? (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {images.map((image) => (
             <RetroCard key={image.id} variant="paper" className="h-full">
               <div className="flex h-full flex-col rounded border-2 border-[var(--theme-border)] bg-white p-2 shadow-md">
-                <div className="aspect-[4/3] overflow-hidden rounded bg-black">
-                  <img src={image.imageUrl} alt={image.title} className="h-full w-full object-contain opacity-90 transition duration-500 hover:opacity-100" />
+                <div className="aspect-video overflow-hidden rounded bg-black">
+                  <img
+                    src={image.imageUrl}
+                    alt={image.title}
+                    className="h-full w-full object-contain opacity-90 transition duration-500 hover:opacity-100"
+                  />
                 </div>
                 <div className="mt-4 flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
@@ -200,14 +197,14 @@ const ManagedImageArchive: React.FC<ManagedImageArchiveProps> = ({ category, act
           ))}
         </div>
       ) : (
-        <div className="grid min-h-[340px] place-items-center text-center">
-          <div>
-            <MediaIcon className="mx-auto h-12 w-12 text-[#c8322a]" />
-            <p className="mt-5 text-xl font-black text-white">{emptyText}</p>
-            <p className="mt-3 text-sm font-bold text-white/45">
-              {isEditMode ? '点击右上角添加第一张图片。' : '内容整理中'}
-            </p>
+        <div className="col-span-full py-20 text-center">
+          <div className="mb-4 inline-block rounded-full border-4 border-white/18 bg-white/10 p-6 shadow-[0_0_34px_rgba(255,255,255,0.08)]">
+            <MediaIcon size={48} className="text-[#c8322a]" />
           </div>
+          <p className="text-xl font-bold text-white/82">{emptyText}</p>
+          <p className="mt-3 text-sm font-bold text-white/45">
+            {isEditMode ? '点击右上角添加第一张图片。' : '内容整理中'}
+          </p>
         </div>
       )}
     </div>

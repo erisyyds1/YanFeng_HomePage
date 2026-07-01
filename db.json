@@ -1,5 +1,17 @@
 {
   "articles": [],
+  "wechatArticles": [
+    {
+      "id": "5f96705e-7e00-44ce-8040-3e258c7b027e",
+      "title": "【预告】檐枫动漫社16周年社庆，袭来！",
+      "summary": "6月21号17：30，我们在沙河学生活动中心301等着你哦。",
+      "coverUrl": "/uploads/wechat/2026/ed057a8e-bc6b-452d-8b65-d68e9ee53573.jpg",
+      "wechatUrl": "https://mp.weixin.qq.com/s/Gc3fMTIU91aTSgXOQLB5KQ",
+      "publishedAt": "2026-06-20",
+      "isPublished": true,
+      "sortOrder": 0
+    }
+  ],
   "videos": [
     {
       "id": "1782876253536",
@@ -28,6 +40,15 @@
     }
   ],
   "uploads": [
+    {
+      "id": "ed057a8e-bc6b-452d-8b65-d68e9ee53573",
+      "key": "uploads/wechat/2026/ed057a8e-bc6b-452d-8b65-d68e9ee53573.jpg",
+      "url": "/uploads/wechat/2026/ed057a8e-bc6b-452d-8b65-d68e9ee53573.jpg",
+      "filename": "yanfeng-hero.jpg",
+      "contentType": "image/jpeg",
+      "byteSize": 314974,
+      "createdAt": "2026-07-01T07:34:56.419Z"
+    },
     {
       "id": "bbf43c2e-e457-46cd-846c-65f6408ab933",
       "key": "uploads/gallery/2026/bbf43c2e-e457-46cd-846c-65f6408ab933.jpg",

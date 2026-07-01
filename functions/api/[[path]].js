@@ -1,7 +1,7 @@
 const DEFAULT_MAIN_GROUP_NUMBER = '737508445';
 const ALLOWED_VIDEO_CATEGORIES = new Set(['winter', 'anniversary', 'gma', 'daily']);
 const ALLOWED_IMAGE_CATEGORIES = new Set(['gallery', 'album']);
-const ALLOWED_UPLOAD_CATEGORIES = new Set(['gallery', 'album', 'thumbnail']);
+const ALLOWED_UPLOAD_CATEGORIES = new Set(['gallery', 'album', 'thumbnail', 'wechat']);
 const ALLOWED_UPLOAD_TYPES = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
@@ -22,6 +22,43 @@ export async function onRequest(context) {
 
     if (request.method === 'GET' && pathname === '/articles') {
       return json(await listArticles(env));
+    }
+
+    if (request.method === 'GET' && pathname === '/wechat-articles') {
+      return json(await listWechatArticles(env, false));
+    }
+
+    if (request.method === 'GET' && pathname === '/wechat-articles/admin') {
+      await requireAdmin(request, env);
+      return json(await listWechatArticles(env, true));
+    }
+
+    if (request.method === 'POST' && pathname === '/wechat-articles/parse') {
+      await requireAdmin(request, env);
+      return json(await parseWechatArticle(await readJson(request)));
+    }
+
+    if (request.method === 'POST' && pathname === '/wechat-articles') {
+      await requireAdmin(request, env);
+      const article = normalizeWechatArticle(await readJson(request));
+      await createWechatArticle(env, article);
+      return json(article, 201);
+    }
+
+    const wechatArticleMatch = pathname.match(/^\/wechat-articles\/([^/]+)$/);
+    if (request.method === 'PATCH' && wechatArticleMatch) {
+      await requireAdmin(request, env);
+      const id = decodeURIComponent(wechatArticleMatch[1]);
+      const article = normalizeWechatArticle({ ...(await readJson(request)), id });
+      const updated = await updateWechatArticle(env, id, article);
+      return updated ? json(article) : json({ error: 'Wechat article not found' }, 404);
+    }
+
+    if (request.method === 'DELETE' && wechatArticleMatch) {
+      await requireAdmin(request, env);
+      await ensureWechatArticlesTable(env);
+      const deleted = await deleteById(env, 'wechat_articles', decodeURIComponent(wechatArticleMatch[1]));
+      return deleted ? json(null, 204) : json({ error: 'Wechat article not found' }, 404);
     }
 
     if (request.method === 'GET' && pathname === '/videos') {
@@ -180,6 +217,93 @@ async function listVideos(env) {
     )
     .all();
   return results.map(mapVideoRow);
+}
+
+async function ensureWechatArticlesTable(env) {
+  const db = requireDb(env);
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS wechat_articles (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        summary TEXT NOT NULL DEFAULT '',
+        cover_url TEXT,
+        wechat_url TEXT NOT NULL,
+        published_at TEXT,
+        is_published INTEGER NOT NULL DEFAULT 1,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`
+    )
+    .run();
+  await db
+    .prepare(
+      `CREATE INDEX IF NOT EXISTS idx_wechat_articles_public_sort
+       ON wechat_articles (is_published, sort_order DESC, published_at DESC, created_at DESC)`
+    )
+    .run();
+}
+
+async function listWechatArticles(env, includeDrafts) {
+  await ensureWechatArticlesTable(env);
+  const db = requireDb(env);
+  const query = includeDrafts
+    ? `SELECT id, title, summary, cover_url, wechat_url, published_at, is_published, sort_order
+       FROM wechat_articles
+       ORDER BY sort_order DESC, published_at DESC, created_at DESC`
+    : `SELECT id, title, summary, cover_url, wechat_url, published_at, is_published, sort_order
+       FROM wechat_articles
+       WHERE is_published = 1
+       ORDER BY sort_order DESC, published_at DESC, created_at DESC`;
+  const { results } = await db.prepare(query).all();
+  return results.map(mapWechatArticleRow);
+}
+
+async function createWechatArticle(env, article) {
+  await ensureWechatArticlesTable(env);
+  const db = requireDb(env);
+  await db
+    .prepare(
+      `INSERT INTO wechat_articles
+        (id, title, summary, cover_url, wechat_url, published_at, is_published, sort_order, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+    )
+    .bind(
+      article.id,
+      article.title,
+      article.summary,
+      article.coverUrl || null,
+      article.wechatUrl,
+      article.publishedAt || null,
+      article.isPublished ? 1 : 0,
+      article.sortOrder
+    )
+    .run();
+}
+
+async function updateWechatArticle(env, id, article) {
+  await ensureWechatArticlesTable(env);
+  const db = requireDb(env);
+  const result = await db
+    .prepare(
+      `UPDATE wechat_articles
+       SET title = ?, summary = ?, cover_url = ?, wechat_url = ?, published_at = ?,
+           is_published = ?, sort_order = ?, updated_at = datetime('now')
+       WHERE id = ?`
+    )
+    .bind(
+      article.title,
+      article.summary,
+      article.coverUrl || null,
+      article.wechatUrl,
+      article.publishedAt || null,
+      article.isPublished ? 1 : 0,
+      article.sortOrder,
+      id
+    )
+    .run();
+  return Boolean(result.meta?.changes);
 }
 
 async function createVideo(env, video) {
@@ -394,6 +518,40 @@ function normalizeManagedImage(payload) {
   };
 }
 
+function normalizeWechatArticle(payload) {
+  const wechatUrl = String(payload?.wechatUrl || payload?.wechat_url || '').trim();
+  const title = String(payload?.title || '').trim() || '未命名公众号推文';
+  const summary = String(payload?.summary || '').trim();
+  const coverUrl = String(payload?.coverUrl || payload?.cover_url || '').trim();
+  const publishedAt = String(payload?.publishedAt || payload?.published_at || '').trim();
+  const sortOrder = Number.isFinite(Number(payload?.sortOrder ?? payload?.sort_order))
+    ? Number(payload?.sortOrder ?? payload?.sort_order)
+    : 0;
+  const isPublished =
+    payload?.isPublished === undefined && payload?.is_published === undefined
+      ? true
+      : Boolean(payload?.isPublished ?? payload?.is_published);
+
+  if (!isAllowedWechatArticleUrl(wechatUrl)) {
+    throw httpError(400, 'A valid WeChat article URL is required');
+  }
+
+  if (coverUrl && !isAllowedImageUrl(coverUrl)) {
+    throw httpError(400, 'A valid cover image URL is required');
+  }
+
+  return {
+    id: String(payload?.id || crypto.randomUUID?.() || Date.now()),
+    title,
+    summary,
+    coverUrl,
+    wechatUrl,
+    publishedAt: publishedAt || new Date().toISOString().slice(0, 10),
+    isPublished,
+    sortOrder
+  };
+}
+
 function mapArticleRow(row) {
   return {
     id: String(row.id),
@@ -403,6 +561,19 @@ function mapArticleRow(row) {
     tag: row.tag || undefined,
     link: row.link || undefined,
     coverUrl: row.cover_url || undefined
+  };
+}
+
+function mapWechatArticleRow(row) {
+  return {
+    id: String(row.id),
+    title: row.title,
+    summary: row.summary || '',
+    coverUrl: row.cover_url || '',
+    wechatUrl: row.wechat_url,
+    publishedAt: row.published_at || '',
+    isPublished: Boolean(row.is_published),
+    sortOrder: Number(row.sort_order || 0)
   };
 }
 
@@ -444,6 +615,133 @@ function isAllowedImageUrl(value) {
   } catch {
     return false;
   }
+}
+
+function isAllowedWechatArticleUrl(value) {
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && parsed.hostname.endsWith('mp.weixin.qq.com');
+  } catch {
+    return false;
+  }
+}
+
+async function parseWechatArticle(payload) {
+  const wechatUrl = String(payload?.wechatUrl || payload?.wechat_url || '').trim();
+  if (!isAllowedWechatArticleUrl(wechatUrl)) {
+    throw httpError(400, 'A valid WeChat article URL is required');
+  }
+
+  try {
+    const response = await fetch(wechatUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 YanfengClubBot/1.0',
+        Accept: 'text/html,application/xhtml+xml'
+      }
+    });
+
+    if (!response.ok) {
+      return { wechatUrl, title: '', summary: '', coverUrl: '', publishedAt: '' };
+    }
+
+    const html = await response.text();
+    return {
+      wechatUrl,
+      ...extractWechatArticleMeta(html)
+    };
+  } catch {
+    return { wechatUrl, title: '', summary: '', coverUrl: '', publishedAt: '' };
+  }
+}
+
+function extractWechatArticleMeta(html) {
+  const title =
+    extractScriptString(html, 'msg_title') ||
+    extractMetaContent(html, 'property', 'og:title') ||
+    extractMetaContent(html, 'name', 'twitter:title') ||
+    extractTitleTag(html);
+  const summary =
+    extractScriptString(html, 'msg_desc') ||
+    extractMetaContent(html, 'property', 'og:description') ||
+    extractMetaContent(html, 'name', 'description') ||
+    '';
+  const coverUrl =
+    extractScriptString(html, 'msg_cdn_url') ||
+    extractMetaContent(html, 'property', 'og:image') ||
+    extractMetaContent(html, 'name', 'twitter:image') ||
+    '';
+  const publishedAt =
+    extractPublishedDate(html) ||
+    extractMetaContent(html, 'property', 'article:published_time').slice(0, 10) ||
+    '';
+
+  return {
+    title: cleanExtractedText(title),
+    summary: cleanExtractedText(summary),
+    coverUrl: cleanExtractedText(coverUrl),
+    publishedAt: cleanExtractedText(publishedAt)
+  };
+}
+
+function extractMetaContent(html, attribute, value) {
+  const attr = escapeRegExp(attribute);
+  const val = escapeRegExp(value);
+  const patterns = [
+    new RegExp(`<meta\\s+[^>]*${attr}=["']${val}["'][^>]*content=["']([^"']*)["'][^>]*>`, 'i'),
+    new RegExp(`<meta\\s+[^>]*content=["']([^"']*)["'][^>]*${attr}=["']${val}["'][^>]*>`, 'i')
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return decodeHtmlEntities(match[1]);
+  }
+  return '';
+}
+
+function extractScriptString(html, variableName) {
+  const pattern = new RegExp(`(?:var\\s+)?${escapeRegExp(variableName)}\\s*=\\s*(['"])([\\s\\S]*?)\\1`, 'i');
+  const match = html.match(pattern);
+  if (!match?.[2]) return '';
+  return decodeHtmlEntities(
+    match[2]
+      .replace(/\\\//g, '/')
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'")
+  );
+}
+
+function extractTitleTag(html) {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match?.[1] ? decodeHtmlEntities(match[1]) : '';
+}
+
+function extractPublishedDate(html) {
+  const ct = html.match(/(?:var\s+)?ct\s*=\s*["'](\d{9,})["']/i)?.[1];
+  if (ct) {
+    const date = new Date(Number(ct) * 1000);
+    if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10);
+  }
+  return '';
+}
+
+function cleanExtractedText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function decodeHtmlEntities(value) {
+  return String(value || '')
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function proxyDifyChat(payload, env) {

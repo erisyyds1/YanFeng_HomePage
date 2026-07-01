@@ -11,7 +11,7 @@ export interface UploadedImage {
   byteSize: number;
 }
 
-export type UploadImageCategory = ManagedImageCategory | 'thumbnail';
+export type UploadImageCategory = ManagedImageCategory | 'thumbnail' | 'wechat';
 
 export const uploadImageFile = async (file: File, category: UploadImageCategory): Promise<UploadedImage | null> => {
   try {

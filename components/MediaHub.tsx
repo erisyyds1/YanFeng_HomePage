@@ -84,7 +84,7 @@ const MediaHub: React.FC<MediaHubProps> = ({ onOpenEntry }) => {
   const [activeHotspot, setActiveHotspot] = useState<MediaContentId | null>(null);
 
   return (
-    <div className="relative h-full min-h-[calc(100dvh-9rem)] overflow-hidden animate-in fade-in zoom-in duration-500">
+    <div className="site-media-stage relative h-full overflow-hidden animate-in fade-in zoom-in duration-500">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] opacity-35 [background-size:160px_160px]"></div>
       <div className="pointer-events-none absolute left-[7%] top-0 h-full w-px bg-white/10"></div>
       <div className="pointer-events-none absolute right-[12%] top-0 h-full w-px bg-white/10"></div>

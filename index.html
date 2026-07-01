@@ -53,15 +53,16 @@
       box-sizing: border-box;
     }
 
-    html,
-    body,
-    #root {
-      height: 100%;
-    }
-
     html {
       scroll-behavior: smooth;
       overflow-x: hidden;
+    }
+
+    html,
+    body,
+    #root {
+      width: 100%;
+      height: 100%;
     }
 
     body {
@@ -104,6 +105,35 @@
       --theme-border: #2c2c2c;
       --theme-darkRed: #8b0000;
       --theme-brown: #5d4037;
+      --site-scale: 0.9;
+      --site-viewport-width: calc(100vw / var(--site-scale));
+      --site-viewport-height: calc(100dvh / var(--site-scale));
+    }
+
+    #root {
+      overflow: hidden;
+      background: #080808;
+    }
+
+    .site-zoom-frame {
+      width: var(--site-viewport-width);
+      height: var(--site-viewport-height);
+      overflow: hidden;
+      transform: scale(var(--site-scale));
+      transform-origin: left top;
+    }
+
+    .site-viewport {
+      width: var(--site-viewport-width);
+      height: var(--site-viewport-height);
+    }
+
+    .site-full-panel {
+      height: var(--site-viewport-height);
+    }
+
+    .site-media-stage {
+      min-height: calc(var(--site-viewport-height) - 9rem);
     }
 
     [data-theme='winter'] {
