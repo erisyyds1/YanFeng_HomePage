@@ -42,7 +42,7 @@ func Load() (Config, error) {
 	v.SetDefault("SEED_PATH", filepath.Join("..", "db.json"))
 	v.SetDefault("DIFY_API_URL", "https://api.dify.ai/v1")
 	v.SetDefault("WECHAT_RSS_BASE_URL", "http://we-mp-rss:8001")
-	v.SetDefault("WECHAT_RSS_MAX_ARTICLES", 50)
+	v.SetDefault("WECHAT_RSS_MAX_ARTICLES", 2000)
 
 	readOptionalEnv(v, ".env")
 	readOptionalEnv(v, filepath.Join("..", ".env"))

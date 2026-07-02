@@ -28,7 +28,7 @@ services:
     environment:
       GOGC: "80"
       GOMEMLIMIT: "96MiB"
-      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_LOW_MEM_MAX_ARTICLES:-100}"
+      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_LOW_MEM_MAX_ARTICLES:-2000}"
     logging: *low-log
 
   we-mp-rss:

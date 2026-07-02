@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 
 	"yanfeng-homepage/backend/model"
 )
+
+const defaultPageSize = 50
 
 type Config struct {
 	BaseURL      string
@@ -75,77 +78,211 @@ func (s *Service) Sync(ctx context.Context) (SyncResult, error) {
 		return result, err
 	}
 
-	for _, rawFeedURL := range s.cfg.FeedURLs {
-		feedURL, err := resolveFeedURL(s.cfg.BaseURL, rawFeedURL)
-		if err != nil {
-			result.Failed++
-			result.Errors = append(result.Errors, err.Error())
-			continue
-		}
+	sources, err := s.feedSources()
+	if err != nil {
+		return result, err
+	}
 
-		articles, err := s.fetchFeed(ctx, feedURL)
-		if err != nil {
-			result.Failed++
-			result.Errors = append(result.Errors, err.Error())
-			continue
-		}
-
-		for index, article := range articles {
-			if s.cfg.MaxArticles > 0 && index >= s.cfg.MaxArticles {
+	for _, source := range sources {
+		processed := 0
+		seenPageArticles := map[string]struct{}{}
+		for offset := source.Offset; ; offset += source.Limit {
+			if s.cfg.MaxArticles > 0 && processed >= s.cfg.MaxArticles {
 				break
 			}
-			result.Fetched++
 
-			if article.WechatURL == "" {
-				result.Skipped++
-				continue
+			feedURL := source.PageURL(offset)
+			articles, err := s.fetchFeed(ctx, feedURL)
+			if err != nil {
+				result.Failed++
+				result.Errors = append(result.Errors, err.Error())
+				break
+			}
+			if len(articles) == 0 {
+				break
 			}
 
-			sourceKey := article.SourceName + "\x00" + article.ExternalID
-			hasSourceKey := article.SourceName != "" && article.ExternalID != ""
-			normalizedURL := canonicalURL(article.WechatURL)
-			existingArticle, duplicated := existingURLs[normalizedURL]
-			if !duplicated && hasSourceKey {
-				existingArticle, duplicated = existingSourceKeys[sourceKey]
+			if offset != source.Offset && isRepeatedPage(articles, seenPageArticles) {
+				break
 			}
-			if duplicated {
-				if err := s.backfillExistingArticle(existingArticle, article); err != nil {
+			rememberPageArticles(articles, seenPageArticles)
+
+			for _, article := range articles {
+				if s.cfg.MaxArticles > 0 && processed >= s.cfg.MaxArticles {
+					break
+				}
+				processed++
+				result.Fetched++
+
+				if article.WechatURL == "" {
+					result.Skipped++
+					continue
+				}
+
+				sourceKey := article.SourceName + "\x00" + article.ExternalID
+				hasSourceKey := article.SourceName != "" && article.ExternalID != ""
+				normalizedURL := canonicalURL(article.WechatURL)
+				existingArticle, duplicated := existingURLs[normalizedURL]
+				if !duplicated && hasSourceKey {
+					existingArticle, duplicated = existingSourceKeys[sourceKey]
+				}
+				if duplicated {
+					if err := s.backfillExistingArticle(existingArticle, article); err != nil {
+						result.Failed++
+						result.Errors = append(result.Errors, err.Error())
+						continue
+					}
+					result.Skipped++
+					continue
+				}
+
+				row := model.WechatArticle{
+					ID:                uuid.NewString(),
+					Title:             valueOrDefault(article.Title, "未命名公众号推文"),
+					Summary:           article.Summary,
+					CoverURL:          article.CoverURL,
+					WechatURL:         article.WechatURL,
+					PublishedAt:       valueOrDefault(article.PublishedAt, time.Now().Format("2006-01-02")),
+					IsPublished:       true,
+					SortOrder:         0,
+					SourceName:        article.SourceName,
+					DisplaySourceName: s.displaySourceName(article.SourceName),
+					ExternalID:        article.ExternalID,
+				}
+				if err := s.db.Create(&row).Error; err != nil {
 					result.Failed++
 					result.Errors = append(result.Errors, err.Error())
 					continue
 				}
-				result.Skipped++
-				continue
+
+				result.Created++
+				existingURLs[normalizedURL] = row
+				if hasSourceKey {
+					existingSourceKeys[sourceKey] = row
+				}
 			}
 
-			row := model.WechatArticle{
-				ID:                uuid.NewString(),
-				Title:             valueOrDefault(article.Title, "未命名公众号推文"),
-				Summary:           article.Summary,
-				CoverURL:          article.CoverURL,
-				WechatURL:         article.WechatURL,
-				PublishedAt:       valueOrDefault(article.PublishedAt, time.Now().Format("2006-01-02")),
-				IsPublished:       true,
-				SortOrder:         0,
-				SourceName:        article.SourceName,
-				DisplaySourceName: s.displaySourceName(article.SourceName),
-				ExternalID:        article.ExternalID,
-			}
-			if err := s.db.Create(&row).Error; err != nil {
-				result.Failed++
-				result.Errors = append(result.Errors, err.Error())
-				continue
-			}
-
-			result.Created++
-			existingURLs[normalizedURL] = row
-			if hasSourceKey {
-				existingSourceKeys[sourceKey] = row
+			if len(articles) < source.Limit {
+				break
 			}
 		}
 	}
 
 	return result, nil
+}
+
+type feedSource struct {
+	URL    *url.URL
+	Limit  int
+	Offset int
+}
+
+func (s *Service) feedSources() ([]feedSource, error) {
+	sources := make([]feedSource, 0, len(s.cfg.FeedURLs))
+	seen := map[string]struct{}{}
+	for _, rawFeedURL := range s.cfg.FeedURLs {
+		feedURL, err := resolveFeedURL(s.cfg.BaseURL, rawFeedURL)
+		if err != nil {
+			return nil, err
+		}
+		source, err := newFeedSource(feedURL)
+		if err != nil {
+			return nil, err
+		}
+		key := source.Key()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		sources = append(sources, source)
+	}
+	return sources, nil
+}
+
+func newFeedSource(feedURL string) (feedSource, error) {
+	parsed, err := url.Parse(feedURL)
+	if err != nil {
+		return feedSource{}, err
+	}
+	query := parsed.Query()
+	limit := positiveQueryInt(query, "limit", defaultPageSize)
+	offset := nonNegativeQueryInt(query, "offset", 0)
+	query.Set("limit", strconv.Itoa(limit))
+	query.Set("offset", strconv.Itoa(offset))
+	parsed.RawQuery = query.Encode()
+	return feedSource{
+		URL:    parsed,
+		Limit:  limit,
+		Offset: offset,
+	}, nil
+}
+
+func (s feedSource) PageURL(offset int) string {
+	page := *s.URL
+	query := page.Query()
+	query.Set("limit", strconv.Itoa(s.Limit))
+	query.Set("offset", strconv.Itoa(offset))
+	page.RawQuery = query.Encode()
+	return page.String()
+}
+
+func (s feedSource) Key() string {
+	keyURL := *s.URL
+	query := keyURL.Query()
+	query.Del("limit")
+	query.Del("offset")
+	keyURL.RawQuery = query.Encode()
+	return keyURL.String()
+}
+
+func positiveQueryInt(query url.Values, key string, fallback int) int {
+	value, err := strconv.Atoi(strings.TrimSpace(query.Get(key)))
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func nonNegativeQueryInt(query url.Values, key string, fallback int) int {
+	value, err := strconv.Atoi(strings.TrimSpace(query.Get(key)))
+	if err != nil || value < 0 {
+		return fallback
+	}
+	return value
+}
+
+func isRepeatedPage(articles []FeedArticle, seen map[string]struct{}) bool {
+	for _, article := range articles {
+		key := feedArticleKey(article)
+		if key == "" {
+			return false
+		}
+		if _, ok := seen[key]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func rememberPageArticles(articles []FeedArticle, seen map[string]struct{}) {
+	for _, article := range articles {
+		if key := feedArticleKey(article); key != "" {
+			seen[key] = struct{}{}
+		}
+	}
+}
+
+func feedArticleKey(article FeedArticle) string {
+	if article.WechatURL != "" {
+		return "url:" + canonicalURL(article.WechatURL)
+	}
+	if article.SourceName != "" && article.ExternalID != "" {
+		return "source:" + article.SourceName + "\x00" + article.ExternalID
+	}
+	if article.Title != "" || article.PublishedAt != "" {
+		return "text:" + article.SourceName + "\x00" + article.Title + "\x00" + article.PublishedAt
+	}
+	return ""
 }
 
 func (s *Service) existingKeys() (map[string]model.WechatArticle, map[string]model.WechatArticle, error) {

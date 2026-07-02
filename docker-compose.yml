@@ -26,7 +26,7 @@ services:
       DIFY_API_URL: "${DIFY_API_URL:-https://api.dify.ai/v1}"
       WECHAT_RSS_BASE_URL: "${WECHAT_RSS_BASE_URL:-http://we-mp-rss:8001}"
       WECHAT_RSS_FEED_URLS: "${WECHAT_RSS_FEED_URLS:-}"
-      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_MAX_ARTICLES:-50}"
+      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_MAX_ARTICLES:-2000}"
       WECHAT_RSS_DISPLAY_NAME_MAP: "${WECHAT_RSS_DISPLAY_NAME_MAP:-}"
     volumes:
       - uploads-data:/app/public/uploads

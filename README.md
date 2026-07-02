@@ -70,8 +70,8 @@ scripts/configure-we-mp-rss-env.sh --yes
 docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d --build
 ```
 
-`docker-compose.2c2g.yml` 会限制各容器 CPU、内存和日志大小，并降低 RSS 单次同步批量。建议服务器额外配置 `2G` swap，避免 `we-mp-rss` 的 Chromium 进程或 MySQL 偶发内存峰值导致容器被系统杀掉。
-如果把 `WECHAT_RSS_LOW_MEM_MAX_ARTICLES` 调到 `50`，RSS URL 也应使用 `offset=0,50,100` 这类步长，避免按 `100` 步长分页时漏同步文章。
+`docker-compose.2c2g.yml` 会限制各容器 CPU、内存和日志大小。建议服务器额外配置 `2G` swap，避免 `we-mp-rss` 的 Chromium 进程或 MySQL 偶发内存峰值导致容器被系统杀掉。
+公众号 RSS 同步会自动按 `limit/offset` 翻页，低配服务器无需手工维护多个 offset URL。
 
 默认访问：
 
@@ -122,11 +122,11 @@ WECHAT_RSS_BASE_URL=http://we-mp-rss:8001
 WECHAT_RSS_FEED_URLS=/rss/example-a.xml,/rss/example-b.xml
 ```
 
-`we-mp-rss` 的 RSS 接口按页输出。当前建议单页 100 条；如果一个公众号已有超过 100 篇存量文章，需要按 offset 配多页：
+`we-mp-rss` 的 RSS 接口按页输出。后端会自动按 `limit/offset` 翻页：当一页返回数量达到 `limit` 时继续请求下一页，直到返回不足一页或达到 `WECHAT_RSS_MAX_ARTICLES`。因此每个公众号只需要配置一个基础 RSS 地址；可按需带上 `limit` 控制单页大小。
 
 ```ini
-WECHAT_RSS_FEED_URLS=/rss/MP_xxx?limit=100&offset=0,/rss/MP_xxx?limit=100&offset=100,/rss/MP_xxx?limit=100&offset=200
-WECHAT_RSS_MAX_ARTICLES=100
+WECHAT_RSS_FEED_URLS=/rss/MP_xxx?limit=50,/rss/MP_yyy?limit=50
+WECHAT_RSS_MAX_ARTICLES=2000
 WECHAT_RSS_DISPLAY_NAME_MAP=番剧鉴赏组=涧桐现视研
 ```
 
@@ -197,7 +197,7 @@ WE_MP_RSS_PORT=8001
 WE_MP_RSS_SHM_SIZE=1gb
 WECHAT_RSS_BASE_URL=http://we-mp-rss:8001
 WECHAT_RSS_FEED_URLS=
-WECHAT_RSS_MAX_ARTICLES=100
+WECHAT_RSS_MAX_ARTICLES=2000
 WECHAT_RSS_DISPLAY_NAME_MAP=番剧鉴赏组=涧桐现视研
 ```
 
