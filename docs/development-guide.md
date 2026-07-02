@@ -364,15 +364,15 @@ docker compose -f docker-compose.yml -f docker-compose.2c2g.yml restart we-mp-rs
 docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d api
 ```
 
-## HTTPS 与 Cloudflare Full (strict)
+## HTTPS 与 Cloudflare
 
 ### 目的
 
-生产环境使用 Cloudflare 橙云代理域名，源站服务器需要提供 `443` HTTPS 服务，Cloudflare 才能使用 `Full (strict)` 模式安全回源。
+生产环境使用 Cloudflare 橙云代理域名。当前大陆 ECS 未备案域名建议使用 Cloudflare `Flexible`，让 Cloudflare 到源站走 HTTP 80；源站 `443` 和 Let's Encrypt 保留给备案后、海外源站或 Cloudflare Tunnel 场景。
 
 项目的 Docker Nginx 配置：
 
-- `80`：重定向到 HTTPS
+- `80`：直接服务前端、API 代理和 `/.well-known/acme-challenge/`
 - `80` 和 `443`：都支持 `/.well-known/acme-challenge/`，用于 Let's Encrypt HTTP-01 验证
 - `443`：使用 Let's Encrypt 免费证书
 - 证书容器路径：`/etc/letsencrypt/live/yanfeng.club/fullchain.pem`
@@ -446,11 +446,13 @@ curl -I https://yanfeng.club
 SSL/TLS -> Overview -> Encryption mode -> Full (strict)
 ```
 
+如果源站仍是大陆 ECS 且域名未备案，不要切 `Full (strict)`；保持 `Flexible`，否则可能出现 Cloudflare `525` 或阿里云 ICP 拦截。
+
 首次申请如果失败，通常是 Cloudflare 已经把 HTTP 强制跳到 HTTPS，但源站还没有正式证书。处理方式：
 
 - 临时关闭 Cloudflare 的 `Always Use HTTPS`
 - 或将 DNS 记录临时切到 DNS only
-- 证书签发成功后，再开启橙云并切到 `Full (strict)`
+- 证书签发成功后，再开启橙云
 
 ## 服务器部署流程
 
