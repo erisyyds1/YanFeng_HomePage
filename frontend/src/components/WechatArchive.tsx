@@ -32,7 +32,7 @@ import {
 import RetroCard from './RetroCard';
 
 type ArticleCategory = 'all' | 'recruit' | 'events' | 'gma' | 'notice' | 'daily' | 'drafts';
-type SourceTab = '涧桐现视研' | '檐枫动漫社';
+type SourceTab = string;
 
 interface WechatArchiveProps {
   isEditMode?: boolean;
@@ -48,10 +48,7 @@ const ARTICLE_CATEGORIES: { id: ArticleCategory; label: string }[] = [
   { id: 'drafts', label: '草稿' }
 ];
 
-const SOURCE_TABS: { id: SourceTab; label: string }[] = [
-  { id: '涧桐现视研', label: '涧桐现视研' },
-  { id: '檐枫动漫社', label: '檐枫动漫社' }
-];
+const DEFAULT_SOURCE_NAME = '涧桐现视研';
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const ALLOWED_UPLOAD_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -78,7 +75,7 @@ const sourceTabButtonKey = (pageButton: number | string) => `wechat-page-${pageB
 
 const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => {
   const [articles, setArticles] = useState<WechatArticle[]>([]);
-  const [activeSource, setActiveSource] = useState<SourceTab>('涧桐现视研');
+  const [activeSource, setActiveSource] = useState<SourceTab>(DEFAULT_SOURCE_NAME);
   const [activeCategory, setActiveCategory] = useState<ArticleCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -326,6 +323,23 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
     setPageJumpInput('');
   };
 
+  const sourceTabs = useMemo(() => {
+    const uniqueSources: string[] = [];
+    for (const item of articles) {
+      const source = getWechatArticleDisplaySource(item);
+      if (source && !uniqueSources.includes(source)) {
+        uniqueSources.push(source);
+      }
+    }
+    return uniqueSources.length > 0 ? uniqueSources : [DEFAULT_SOURCE_NAME];
+  }, [articles]);
+
+  useEffect(() => {
+    if (!sourceTabs.includes(activeSource)) {
+      setActiveSource(sourceTabs[0]);
+    }
+  }, [activeSource, sourceTabs]);
+
   const filteredArticles = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
 
@@ -443,20 +457,20 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
               aria-label="公众号来源切换"
               className="flex flex-wrap justify-end gap-2"
             >
-              {SOURCE_TABS.map((source) => {
-                const isActive = activeSource === source.id;
+              {sourceTabs.map((source) => {
+                const isActive = activeSource === source;
                 return (
                   <button
-                    key={source.id}
+                    key={source}
                     type="button"
-                    onClick={() => setActiveSource(source.id)}
+                    onClick={() => setActiveSource(source)}
                     className={`border-4 px-5 py-3 text-sm font-black tracking-[0.18em] shadow-[4px_4px_0px_var(--theme-border)] transition hover:-translate-y-0.5 ${
                       isActive
                         ? 'border-[var(--theme-border)] bg-[var(--theme-primary)] text-white'
                         : 'border-[var(--theme-border)] bg-white text-[var(--theme-border)] hover:bg-[var(--theme-secondary)]'
                     }`}
                   >
-                    {source.label}
+                    {source}
                   </button>
                 );
               })}
