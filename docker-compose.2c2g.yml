@@ -21,6 +21,12 @@ services:
     mem_reservation: 16m
     logging: *low-log
 
+  cloudflared:
+    cpus: "0.10"
+    mem_limit: 64m
+    mem_reservation: 16m
+    logging: *low-log
+
   api:
     cpus: "0.35"
     mem_limit: 128m

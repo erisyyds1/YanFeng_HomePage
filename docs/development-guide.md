@@ -370,6 +370,50 @@ docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d api
 
 生产环境使用 Cloudflare 橙云代理域名。当前大陆 ECS 未备案域名建议使用 Cloudflare `Flexible`，让 Cloudflare 到源站走 HTTP 80；源站 `443` 和 Let's Encrypt 保留给备案后、海外源站或 Cloudflare Tunnel 场景。
 
+### Cloudflare Tunnel
+
+目的：
+
+让服务器通过 `cloudflared` 主动连接 Cloudflare，公网请求不再直接进入阿里云 `80/443`，适合未备案域名临时恢复访问。
+
+服务器 `.env` 配置：
+
+```ini
+CLOUDFLARE_TUNNEL_TOKEN=replace-with-cloudflare-token
+```
+
+使用方法：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d cloudflared
+```
+
+参数说明：
+
+| 配置 | 说明 |
+|------|------|
+| `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare Zero Trust 生成的 tunnel token，只写入服务器 `.env`，不要提交 Git |
+
+返回值：
+
+- 成功：`cloudflared` 容器保持 `Up`
+- 失败：查看 `docker logs yanfeng_homepage-cloudflared-1 --tail 100`
+
+Cloudflare Public Hostname 配置：
+
+```text
+yanfeng.club     -> http://web:80
+www.yanfeng.club -> http://web:80
+```
+
+示例：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d cloudflared
+docker logs yanfeng_homepage-cloudflared-1 --tail 100
+curl -I https://yanfeng.club
+```
+
 项目的 Docker Nginx 配置：
 
 - `80`：直接服务前端、API 代理和 `/.well-known/acme-challenge/`

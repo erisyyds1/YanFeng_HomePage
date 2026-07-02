@@ -103,6 +103,25 @@ sudo scripts/install-db-backup-cron.sh
 
 生产环境通过 Cloudflare 橙云代理访问域名，源站 Docker Nginx 同时监听 `80` 和 `443`。当前大陆 ECS 未备案域名建议使用 Cloudflare `Flexible`，让 Cloudflare 到源站走 HTTP 80；`443` 和 Let's Encrypt 保留给备案后、海外源站或 Cloudflare Tunnel 场景。
 
+使用 Cloudflare Tunnel 时，在服务器 `.env` 配置 Cloudflare 生成的 token：
+
+```ini
+CLOUDFLARE_TUNNEL_TOKEN=replace-with-cloudflare-token
+```
+
+启动隧道：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d cloudflared
+```
+
+Tunnel 的 Public Hostname 推荐配置：
+
+```text
+yanfeng.club     -> http://web:80
+www.yanfeng.club -> http://web:80
+```
+
 服务器 `.env` 需要包含：
 
 ```ini
