@@ -1,7 +1,7 @@
-package logger
+package util
 
 import "go.uber.org/zap"
 
-func New() (*zap.Logger, error) {
+func NewLogger() (*zap.Logger, error) {
 	return zap.NewProduction()
 }

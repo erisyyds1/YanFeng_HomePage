@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"yanfeng-homepage/backend/internal/models"
+	"yanfeng-homepage/backend/model"
 )
 
 type Config struct {
@@ -118,7 +118,7 @@ func (s *Service) Sync(ctx context.Context) (SyncResult, error) {
 				continue
 			}
 
-			row := models.WechatArticle{
+			row := model.WechatArticle{
 				ID:                uuid.NewString(),
 				Title:             valueOrDefault(article.Title, "未命名公众号推文"),
 				Summary:           article.Summary,
@@ -148,14 +148,14 @@ func (s *Service) Sync(ctx context.Context) (SyncResult, error) {
 	return result, nil
 }
 
-func (s *Service) existingKeys() (map[string]models.WechatArticle, map[string]models.WechatArticle, error) {
-	var rows []models.WechatArticle
+func (s *Service) existingKeys() (map[string]model.WechatArticle, map[string]model.WechatArticle, error) {
+	var rows []model.WechatArticle
 	if err := s.db.Find(&rows).Error; err != nil {
 		return nil, nil, err
 	}
 
-	sourceKeys := make(map[string]models.WechatArticle, len(rows))
-	urls := make(map[string]models.WechatArticle, len(rows))
+	sourceKeys := make(map[string]model.WechatArticle, len(rows))
+	urls := make(map[string]model.WechatArticle, len(rows))
 	for _, row := range rows {
 		if row.WechatURL != "" {
 			urls[canonicalURL(row.WechatURL)] = row
@@ -167,7 +167,7 @@ func (s *Service) existingKeys() (map[string]models.WechatArticle, map[string]mo
 	return sourceKeys, urls, nil
 }
 
-func (s *Service) backfillExistingArticle(existing models.WechatArticle, article FeedArticle) error {
+func (s *Service) backfillExistingArticle(existing model.WechatArticle, article FeedArticle) error {
 	updates := map[string]any{}
 	if shouldBackfillCover(existing.CoverURL, article.CoverURL) {
 		updates["cover_url"] = article.CoverURL
@@ -185,7 +185,7 @@ func (s *Service) backfillExistingArticle(existing models.WechatArticle, article
 	if len(updates) == 0 {
 		return nil
 	}
-	return s.db.Model(&models.WechatArticle{}).Where("id = ?", existing.ID).Updates(updates).Error
+	return s.db.Model(&model.WechatArticle{}).Where("id = ?", existing.ID).Updates(updates).Error
 }
 
 func shouldBackfillCover(existingCoverURL string, rssCoverURL string) bool {

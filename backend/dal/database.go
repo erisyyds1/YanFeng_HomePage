@@ -1,4 +1,4 @@
-package database
+package dal
 
 import (
 	"encoding/json"
@@ -10,11 +10,11 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	"yanfeng-homepage/backend/internal/config"
-	"yanfeng-homepage/backend/internal/models"
+	"yanfeng-homepage/backend/conf"
+	"yanfeng-homepage/backend/model"
 )
 
-func Open(cfg config.Config) (*gorm.DB, error) {
+func Open(cfg conf.Config) (*gorm.DB, error) {
 	switch cfg.DBDriver {
 	case "sqlite":
 		return gorm.Open(sqlite.Open(cfg.DBDSN), &gorm.Config{})
@@ -31,17 +31,17 @@ func OpenSQLiteInMemory() (*gorm.DB, error) {
 
 func Migrate(db *gorm.DB) error {
 	if err := db.AutoMigrate(
-		&models.SiteSetting{},
-		&models.Article{},
-		&models.WechatArticle{},
-		&models.Video{},
-		&models.MediaImage{},
-		&models.Upload{},
+		&model.SiteSetting{},
+		&model.Article{},
+		&model.WechatArticle{},
+		&model.Video{},
+		&model.MediaImage{},
+		&model.Upload{},
 	); err != nil {
 		return err
 	}
 
-	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(&models.SiteSetting{
+	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.SiteSetting{
 		Key:   "main_group_number",
 		Value: "737508445",
 	}).Error
@@ -128,7 +128,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 			if err := tx.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "key"}},
 				DoUpdates: clause.AssignmentColumns([]string{"value"}),
-			}).Create(&models.SiteSetting{
+			}).Create(&model.SiteSetting{
 				Key:   "main_group_number",
 				Value: payload.SiteSettings.MainGroupNumber,
 			}).Error; err != nil {
@@ -137,7 +137,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 		}
 
 		for _, item := range payload.Articles {
-			row := models.Article{
+			row := model.Article{
 				ID:       item.ID,
 				Title:    item.Title,
 				Date:     item.Date,
@@ -153,7 +153,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 		}
 
 		for _, item := range payload.WechatArticles {
-			row := models.WechatArticle{
+			row := model.WechatArticle{
 				ID:                item.ID,
 				Title:             item.Title,
 				Summary:           item.Summary,
@@ -176,7 +176,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 			if videoType == "" {
 				videoType = "bilibili"
 			}
-			row := models.Video{
+			row := model.Video{
 				ID:        item.ID,
 				Title:     item.Title,
 				URL:       item.URL,
@@ -190,7 +190,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 		}
 
 		for _, item := range payload.MediaImages {
-			row := models.MediaImage{
+			row := model.MediaImage{
 				ID:       item.ID,
 				Title:    item.Title,
 				ImageURL: item.ImageURL,
@@ -202,7 +202,7 @@ func SeedFromDBJSON(db *gorm.DB, path string) error {
 		}
 
 		for _, item := range payload.Uploads {
-			row := models.Upload{
+			row := model.Upload{
 				ID:          item.ID,
 				Key:         item.Key,
 				URL:         item.URL,

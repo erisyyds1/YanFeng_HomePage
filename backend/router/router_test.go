@@ -1,4 +1,4 @@
-package httpserver_test
+package router_test
 
 import (
 	"bytes"
@@ -16,10 +16,10 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"yanfeng-homepage/backend/internal/config"
-	"yanfeng-homepage/backend/internal/database"
-	"yanfeng-homepage/backend/internal/httpserver"
-	"yanfeng-homepage/backend/internal/models"
+	"yanfeng-homepage/backend/conf"
+	"yanfeng-homepage/backend/dal"
+	"yanfeng-homepage/backend/model"
+	"yanfeng-homepage/backend/router"
 )
 
 func TestAdminLoginAndProtectedRoute(t *testing.T) {
@@ -164,7 +164,7 @@ func TestWechatArticleSyncImportsRSSFeedAndSkipsDuplicates(t *testing.T) {
 	}))
 	defer feedServer.Close()
 
-	router, _ := newTestRouterWithConfig(t, func(cfg *config.Config) {
+	router, _ := newTestRouterWithConfig(t, func(cfg *conf.Config) {
 		cfg.WechatRSSFeedURLs = []string{feedServer.URL + "/feed.xml"}
 		cfg.WechatRSSDisplayNames = map[string]string{"番剧鉴赏组": "涧桐现视研"}
 	})
@@ -238,13 +238,13 @@ func TestWechatArticleSyncBackfillsDuplicateCoverAndDisplaySource(t *testing.T) 
 	}))
 	defer feedServer.Close()
 
-	router, db := newTestRouterWithConfig(t, func(cfg *config.Config) {
+	router, db := newTestRouterWithConfig(t, func(cfg *conf.Config) {
 		cfg.WechatRSSFeedURLs = []string{feedServer.URL + "/feed.xml"}
 		cfg.WechatRSSDisplayNames = map[string]string{"番剧鉴赏组": "涧桐现视研"}
 	})
 	token := login(t, router)
 
-	oldRow := models.WechatArticle{
+	oldRow := model.WechatArticle{
 		ID:          "existing-row",
 		Title:       "已有旧文章",
 		Summary:     "旧摘要",
@@ -269,7 +269,7 @@ func TestWechatArticleSyncBackfillsDuplicateCoverAndDisplaySource(t *testing.T) 
 		t.Fatalf("expected duplicate article to be skipped without creating rows, got %#v", result)
 	}
 
-	var updated models.WechatArticle
+	var updated model.WechatArticle
 	if err := db.First(&updated, "id = ?", oldRow.ID).Error; err != nil {
 		t.Fatalf("failed to load updated article: %v", err)
 	}
@@ -340,7 +340,7 @@ func TestSeedFromDBJSONImportsExistingContent(t *testing.T) {
 	if err := os.WriteFile(seedPath, seed, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := database.SeedFromDBJSON(db, seedPath); err != nil {
+	if err := dal.SeedFromDBJSON(db, seedPath); err != nil {
 		t.Fatalf("seed from db.json failed: %v", err)
 	}
 
@@ -357,20 +357,20 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	return newTestRouterWithConfig(t, nil)
 }
 
-func newTestRouterWithConfig(t *testing.T, customize func(*config.Config)) (*gin.Engine, *gorm.DB) {
+func newTestRouterWithConfig(t *testing.T, customize func(*conf.Config)) (*gin.Engine, *gorm.DB) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 
-	db, err := database.OpenSQLiteInMemory()
+	db, err := dal.OpenSQLiteInMemory()
 	if err != nil {
 		t.Fatalf("open sqlite db: %v", err)
 	}
-	if err := database.Migrate(db); err != nil {
+	if err := dal.Migrate(db); err != nil {
 		t.Fatalf("migrate db: %v", err)
 	}
 
 	publicDir := filepath.Join(t.TempDir(), "public")
-	cfg := config.Config{
+	cfg := conf.Config{
 		Port:          3001,
 		CORSOrigin:    "*",
 		AdminPassword: "secret",
@@ -383,12 +383,12 @@ func newTestRouterWithConfig(t *testing.T, customize func(*config.Config)) (*gin
 		customize(&cfg)
 	}
 
-	router := httpserver.NewRouter(httpserver.Dependencies{
+	engine := router.NewRouter(router.Dependencies{
 		Config: cfg,
 		DB:     db,
 		Logger: zap.NewNop(),
 	})
-	return router, db
+	return engine, db
 }
 
 func login(t *testing.T, router http.Handler) string {

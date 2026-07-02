@@ -1,16 +1,13 @@
-package httpserver
+package router
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"html"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -20,30 +17,24 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"yanfeng-homepage/backend/internal/auth"
-	"yanfeng-homepage/backend/internal/config"
-	"yanfeng-homepage/backend/internal/models"
-	"yanfeng-homepage/backend/internal/wechatrss"
-)
-
-const maxUploadBytes = 8 * 1024 * 1024
-
-var (
-	allowedVideoCategories  = map[string]bool{"winter": true, "anniversary": true, "gma": true, "daily": true}
-	allowedImageCategories  = map[string]bool{"gallery": true, "album": true}
-	allowedUploadCategories = map[string]bool{"gallery": true, "album": true, "thumbnail": true, "wechat": true}
-	allowedUploadTypes      = map[string]string{"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
+	"yanfeng-homepage/backend/conf"
+	"yanfeng-homepage/backend/constant"
+	"yanfeng-homepage/backend/helper"
+	"yanfeng-homepage/backend/model"
+	"yanfeng-homepage/backend/service/auth"
+	"yanfeng-homepage/backend/service/wechatrss"
+	"yanfeng-homepage/backend/util"
 )
 
 type Dependencies struct {
-	Config     config.Config
+	Config     conf.Config
 	DB         *gorm.DB
 	Logger     *zap.Logger
 	HTTPClient *http.Client
 }
 
 type Handler struct {
-	cfg        config.Config
+	cfg        conf.Config
 	db         *gorm.DB
 	logger     *zap.Logger
 	httpClient *http.Client
@@ -82,21 +73,21 @@ func NewRouter(deps Dependencies) *gin.Engine {
 		),
 	}
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(corsMiddleware(deps.Config.CORSOrigin))
+	engine := gin.New()
+	engine.Use(gin.Recovery())
+	engine.Use(corsMiddleware(deps.Config.CORSOrigin))
 
-	registerRoutes(router.Group(""), h)
-	registerRoutes(router.Group("/api"), h)
+	registerRoutes(engine.Group(""), h)
+	registerRoutes(engine.Group("/api"), h)
 
 	uploadDir := filepath.Join(deps.Config.PublicDir, "uploads")
-	router.StaticFS("/uploads", gin.Dir(uploadDir, false))
-	router.StaticFS("/api/uploads", gin.Dir(uploadDir, false))
+	engine.StaticFS("/uploads", gin.Dir(uploadDir, false))
+	engine.StaticFS("/api/uploads", gin.Dir(uploadDir, false))
 
-	router.NoRoute(func(c *gin.Context) {
+	engine.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Not found"})
 	})
-	return router
+	return engine
 }
 
 func registerRoutes(group *gin.RouterGroup, h *Handler) {
@@ -152,9 +143,9 @@ func (h *Handler) login(c *gin.Context) {
 		return
 	}
 
-	password := strings.TrimSpace(stringValue(payload["message"]))
+	password := strings.TrimSpace(util.StringValue(payload["message"]))
 	if password == "" {
-		password = strings.TrimSpace(stringValue(payload["password"]))
+		password = strings.TrimSpace(util.StringValue(payload["password"]))
 	}
 
 	session, err := h.auth.Login(password)
@@ -182,7 +173,7 @@ func (h *Handler) requireAdmin(object string, action string) gin.HandlerFunc {
 }
 
 func (h *Handler) listArticles(c *gin.Context) {
-	var rows []models.Article
+	var rows []model.Article
 	if err := h.db.Order("date DESC").Order("created_at DESC").Find(&rows).Error; err != nil {
 		respondError(c, err)
 		return
@@ -204,7 +195,7 @@ func (h *Handler) listWechatArticles(c *gin.Context, publicOnly bool) {
 		query = query.Where("is_published = ?", true)
 	}
 
-	var rows []models.WechatArticle
+	var rows []model.WechatArticle
 	if err := query.Find(&rows).Error; err != nil {
 		respondError(c, err)
 		return
@@ -219,8 +210,8 @@ func (h *Handler) parseWechatArticle(c *gin.Context) {
 		return
 	}
 
-	wechatURL := strings.TrimSpace(firstString(payload, "wechatUrl", "wechat_url"))
-	if !isAllowedWechatArticleURL(wechatURL) {
+	wechatURL := strings.TrimSpace(util.FirstString(payload, "wechatUrl", "wechat_url"))
+	if !helper.IsAllowedWechatArticleURL(wechatURL) {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "A valid WeChat article URL is required"})
 		return
 	}
@@ -249,7 +240,7 @@ func (h *Handler) parseWechatArticle(c *gin.Context) {
 		c.JSON(http.StatusOK, result)
 		return
 	}
-	meta := extractWechatArticleMeta(string(raw))
+	meta := helper.ExtractWechatArticleMeta(string(raw))
 	meta["wechatUrl"] = wechatURL
 	c.JSON(http.StatusOK, meta)
 }
@@ -295,7 +286,7 @@ func (h *Handler) updateWechatArticle(c *gin.Context) {
 		return
 	}
 
-	var existing models.WechatArticle
+	var existing model.WechatArticle
 	if err := h.db.First(&existing, "id = ?", id).Error; err != nil {
 		respondNotFoundOrError(c, err, "Wechat article not found")
 		return
@@ -318,11 +309,11 @@ func (h *Handler) updateWechatArticle(c *gin.Context) {
 }
 
 func (h *Handler) deleteWechatArticle(c *gin.Context) {
-	h.deleteByID(c, &models.WechatArticle{}, "Wechat article not found")
+	h.deleteByID(c, &model.WechatArticle{}, "Wechat article not found")
 }
 
 func (h *Handler) listVideos(c *gin.Context) {
-	var rows []models.Video
+	var rows []model.Video
 	if err := h.db.Order("sort_order DESC").Order("created_at DESC").Find(&rows).Error; err != nil {
 		respondError(c, err)
 		return
@@ -351,7 +342,7 @@ func (h *Handler) updateVideo(c *gin.Context) {
 		return
 	}
 
-	var existing models.Video
+	var existing model.Video
 	if err := h.db.First(&existing, "id = ?", id).Error; err != nil {
 		respondNotFoundOrError(c, err, "Video not found")
 		return
@@ -369,7 +360,7 @@ func (h *Handler) updateVideo(c *gin.Context) {
 }
 
 func (h *Handler) deleteVideo(c *gin.Context) {
-	h.deleteByID(c, &models.Video{}, "Video not found")
+	h.deleteByID(c, &model.Video{}, "Video not found")
 }
 
 func (h *Handler) getSiteSettings(c *gin.Context) {
@@ -382,13 +373,13 @@ func (h *Handler) updateSiteSettings(c *gin.Context) {
 		respondError(c, err)
 		return
 	}
-	mainGroupNumber := strings.TrimSpace(stringValue(payload["mainGroupNumber"]))
+	mainGroupNumber := strings.TrimSpace(util.StringValue(payload["mainGroupNumber"]))
 	if mainGroupNumber == "" {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Main QQ group number is required"})
 		return
 	}
 
-	row := models.SiteSetting{Key: "main_group_number", Value: mainGroupNumber}
+	row := model.SiteSetting{Key: "main_group_number", Value: mainGroupNumber}
 	if err := h.db.Save(&row).Error; err != nil {
 		respondError(c, err)
 		return
@@ -397,15 +388,15 @@ func (h *Handler) updateSiteSettings(c *gin.Context) {
 }
 
 func (h *Handler) mainGroupNumber() string {
-	var row models.SiteSetting
+	var row model.SiteSetting
 	if err := h.db.First(&row, "`key` = ?", "main_group_number").Error; err != nil || row.Value == "" {
-		return "737508445"
+		return constant.DefaultMainGroupNumber
 	}
 	return row.Value
 }
 
 func (h *Handler) listMediaImages(c *gin.Context) {
-	var rows []models.MediaImage
+	var rows []model.MediaImage
 	if err := h.db.Order("sort_order DESC").Order("created_at DESC").Find(&rows).Error; err != nil {
 		respondError(c, err)
 		return
@@ -434,7 +425,7 @@ func (h *Handler) updateMediaImage(c *gin.Context) {
 		return
 	}
 
-	var existing models.MediaImage
+	var existing model.MediaImage
 	if err := h.db.First(&existing, "id = ?", id).Error; err != nil {
 		respondNotFoundOrError(c, err, "Image not found")
 		return
@@ -450,7 +441,7 @@ func (h *Handler) updateMediaImage(c *gin.Context) {
 }
 
 func (h *Handler) deleteMediaImage(c *gin.Context) {
-	h.deleteByID(c, &models.MediaImage{}, "Image not found")
+	h.deleteByID(c, &model.MediaImage{}, "Image not found")
 }
 
 func (h *Handler) uploadFile(c *gin.Context) {
@@ -458,7 +449,7 @@ func (h *Handler) uploadFile(c *gin.Context) {
 	if category == "" {
 		category = "gallery"
 	}
-	if !allowedUploadCategories[category] {
+	if !constant.AllowedUploadCategories[category] {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Invalid upload category"})
 		return
 	}
@@ -468,13 +459,13 @@ func (h *Handler) uploadFile(c *gin.Context) {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Image file is required"})
 		return
 	}
-	if file.Size > maxUploadBytes {
+	if file.Size > constant.MaxUploadBytes {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Image must be 8 MB or smaller"})
 		return
 	}
 
 	contentType := strings.ToLower(file.Header.Get("Content-Type"))
-	extension := allowedUploadTypes[contentType]
+	extension := constant.AllowedUploadTypes[contentType]
 	if extension == "" {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Only JPG, PNG, and WebP uploads are allowed"})
 		return
@@ -493,7 +484,7 @@ func (h *Handler) uploadFile(c *gin.Context) {
 		return
 	}
 
-	row := models.Upload{
+	row := model.Upload{
 		ID:          id,
 		Key:         key,
 		URL:         "/" + key,
@@ -515,7 +506,7 @@ func (h *Handler) proxyDifyChat(c *gin.Context) {
 		return
 	}
 
-	query := strings.TrimSpace(firstString(payload, "query", "message"))
+	query := strings.TrimSpace(util.FirstString(payload, "query", "message"))
 	if query == "" {
 		respondError(c, httpError{status: http.StatusBadRequest, message: "Message is required"})
 		return
@@ -532,12 +523,12 @@ func (h *Handler) proxyDifyChat(c *gin.Context) {
 	}
 
 	requestBody := map[string]any{
-		"inputs":          valueOrDefault(payload["inputs"], map[string]any{}),
+		"inputs":          util.ValueOrDefault(payload["inputs"], map[string]any{}),
 		"query":           query,
 		"response_mode":   "blocking",
-		"conversation_id": stringValue(payload["conversation_id"]),
-		"user":            valueOrDefault(payload["user"], "yanfeng-web"),
-		"files":           valueOrDefault(payload["files"], []any{}),
+		"conversation_id": util.StringValue(payload["conversation_id"]),
+		"user":            util.ValueOrDefault(payload["user"], "yanfeng-web"),
+		"files":           util.ValueOrDefault(payload["files"], []any{}),
 	}
 	raw, _ := json.Marshal(requestBody)
 	req, err := http.NewRequest(http.MethodPost, apiURL+"/chat-messages", bytes.NewReader(raw))
@@ -567,7 +558,7 @@ func (h *Handler) proxyDifyChat(c *gin.Context) {
 		return
 	}
 
-	answer := stringValue(data["answer"])
+	answer := util.StringValue(data["answer"])
 	if answer == "" {
 		answer = "I do not have an answer yet."
 	}
@@ -578,8 +569,8 @@ func (h *Handler) proxyDifyChat(c *gin.Context) {
 	})
 }
 
-func (h *Handler) deleteByID(c *gin.Context, model any, notFound string) {
-	result := h.db.Delete(model, "id = ?", c.Param("id"))
+func (h *Handler) deleteByID(c *gin.Context, target any, notFound string) {
+	result := h.db.Delete(target, "id = ?", c.Param("id"))
 	if result.Error != nil {
 		respondError(c, result.Error)
 		return
@@ -591,116 +582,116 @@ func (h *Handler) deleteByID(c *gin.Context, model any, notFound string) {
 	c.Status(http.StatusNoContent)
 }
 
-func normalizeWechatArticle(c *gin.Context, id string) (models.WechatArticle, error) {
+func normalizeWechatArticle(c *gin.Context, id string) (model.WechatArticle, error) {
 	var payload map[string]any
 	if err := bindJSON(c, &payload); err != nil {
-		return models.WechatArticle{}, err
+		return model.WechatArticle{}, err
 	}
 
-	wechatURL := strings.TrimSpace(firstString(payload, "wechatUrl", "wechat_url"))
-	if !isAllowedWechatArticleURL(wechatURL) {
-		return models.WechatArticle{}, httpError{status: http.StatusBadRequest, message: "A valid WeChat article URL is required"}
+	wechatURL := strings.TrimSpace(util.FirstString(payload, "wechatUrl", "wechat_url"))
+	if !helper.IsAllowedWechatArticleURL(wechatURL) {
+		return model.WechatArticle{}, httpError{status: http.StatusBadRequest, message: "A valid WeChat article URL is required"}
 	}
 
-	title := strings.TrimSpace(stringValue(payload["title"]))
+	title := strings.TrimSpace(util.StringValue(payload["title"]))
 	if title == "" {
 		title = "未命名公众号推文"
 	}
-	publishedAt := strings.TrimSpace(firstString(payload, "publishedAt", "published_at"))
+	publishedAt := strings.TrimSpace(util.FirstString(payload, "publishedAt", "published_at"))
 	if publishedAt == "" {
 		publishedAt = time.Now().Format("2006-01-02")
 	}
-	coverURL := strings.TrimSpace(firstString(payload, "coverUrl", "cover_url"))
-	if coverURL != "" && !isAllowedImageURL(coverURL) {
-		return models.WechatArticle{}, httpError{status: http.StatusBadRequest, message: "A valid cover image URL is required"}
+	coverURL := strings.TrimSpace(util.FirstString(payload, "coverUrl", "cover_url"))
+	if coverURL != "" && !helper.IsAllowedImageURL(coverURL) {
+		return model.WechatArticle{}, httpError{status: http.StatusBadRequest, message: "A valid cover image URL is required"}
 	}
 
 	isPublished := true
-	if value, ok := firstValue(payload, "isPublished", "is_published"); ok {
-		isPublished = boolValue(value)
+	if value, ok := util.FirstValue(payload, "isPublished", "is_published"); ok {
+		isPublished = util.BoolValue(value)
 	}
-	sortOrder := intValue(firstValueOrNil(payload, "sortOrder", "sort_order"))
+	sortOrder := util.IntValue(util.FirstValueOrNil(payload, "sortOrder", "sort_order"))
 	if id == "" {
-		id = strings.TrimSpace(stringValue(payload["id"]))
+		id = strings.TrimSpace(util.StringValue(payload["id"]))
 	}
 	if id == "" {
 		id = uuid.NewString()
 	}
 
-	return models.WechatArticle{
+	return model.WechatArticle{
 		ID:                id,
 		Title:             title,
-		Summary:           strings.TrimSpace(stringValue(payload["summary"])),
+		Summary:           strings.TrimSpace(util.StringValue(payload["summary"])),
 		CoverURL:          coverURL,
 		WechatURL:         wechatURL,
 		PublishedAt:       publishedAt,
 		IsPublished:       isPublished,
 		SortOrder:         sortOrder,
-		SourceName:        strings.TrimSpace(firstString(payload, "sourceName", "source_name")),
-		DisplaySourceName: strings.TrimSpace(firstString(payload, "displaySourceName", "display_source_name")),
-		ExternalID:        strings.TrimSpace(firstString(payload, "externalId", "external_id")),
+		SourceName:        strings.TrimSpace(util.FirstString(payload, "sourceName", "source_name")),
+		DisplaySourceName: strings.TrimSpace(util.FirstString(payload, "displaySourceName", "display_source_name")),
+		ExternalID:        strings.TrimSpace(util.FirstString(payload, "externalId", "external_id")),
 	}, nil
 }
 
-func normalizeVideo(c *gin.Context, id string) (models.Video, error) {
+func normalizeVideo(c *gin.Context, id string) (model.Video, error) {
 	var payload map[string]any
 	if err := bindJSON(c, &payload); err != nil {
-		return models.Video{}, err
+		return model.Video{}, err
 	}
 
-	title := strings.TrimSpace(stringValue(payload["title"]))
+	title := strings.TrimSpace(util.StringValue(payload["title"]))
 	if title == "" {
-		return models.Video{}, httpError{status: http.StatusBadRequest, message: "Video title is required"}
+		return model.Video{}, httpError{status: http.StatusBadRequest, message: "Video title is required"}
 	}
-	videoURL := strings.TrimSpace(stringValue(payload["url"]))
-	if !isAllowedBilibiliPlayerURL(videoURL) {
-		return models.Video{}, httpError{status: http.StatusBadRequest, message: "A valid Bilibili player URL is required"}
+	videoURL := strings.TrimSpace(util.StringValue(payload["url"]))
+	if !helper.IsAllowedBilibiliPlayerURL(videoURL) {
+		return model.Video{}, httpError{status: http.StatusBadRequest, message: "A valid Bilibili player URL is required"}
 	}
-	category := strings.TrimSpace(stringValue(payload["category"]))
+	category := strings.TrimSpace(util.StringValue(payload["category"]))
 	if category == "" {
 		category = "daily"
 	}
-	if !allowedVideoCategories[category] {
-		return models.Video{}, httpError{status: http.StatusBadRequest, message: "Invalid video category"}
+	if !constant.AllowedVideoCategories[category] {
+		return model.Video{}, httpError{status: http.StatusBadRequest, message: "Invalid video category"}
 	}
-	thumbnail := strings.TrimSpace(stringValue(payload["thumbnail"]))
-	if thumbnail != "" && !isAllowedImageURL(thumbnail) {
-		return models.Video{}, httpError{status: http.StatusBadRequest, message: "A valid thumbnail image URL is required"}
+	thumbnail := strings.TrimSpace(util.StringValue(payload["thumbnail"]))
+	if thumbnail != "" && !helper.IsAllowedImageURL(thumbnail) {
+		return model.Video{}, httpError{status: http.StatusBadRequest, message: "A valid thumbnail image URL is required"}
 	}
 	if id == "" {
-		id = strings.TrimSpace(stringValue(payload["id"]))
+		id = strings.TrimSpace(util.StringValue(payload["id"]))
 	}
 	if id == "" {
 		id = strconv.FormatInt(time.Now().UnixMilli(), 10)
 	}
-	return models.Video{ID: id, Title: title, URL: videoURL, Type: "bilibili", Thumbnail: thumbnail, Category: category}, nil
+	return model.Video{ID: id, Title: title, URL: videoURL, Type: "bilibili", Thumbnail: thumbnail, Category: category}, nil
 }
 
-func normalizeMediaImage(c *gin.Context, id string) (models.MediaImage, error) {
+func normalizeMediaImage(c *gin.Context, id string) (model.MediaImage, error) {
 	var payload map[string]any
 	if err := bindJSON(c, &payload); err != nil {
-		return models.MediaImage{}, err
+		return model.MediaImage{}, err
 	}
 
-	title := strings.TrimSpace(stringValue(payload["title"]))
+	title := strings.TrimSpace(util.StringValue(payload["title"]))
 	if title == "" {
-		return models.MediaImage{}, httpError{status: http.StatusBadRequest, message: "Image title is required"}
+		return model.MediaImage{}, httpError{status: http.StatusBadRequest, message: "Image title is required"}
 	}
-	imageURL := strings.TrimSpace(firstString(payload, "imageUrl", "image_url"))
-	if !isAllowedImageURL(imageURL) {
-		return models.MediaImage{}, httpError{status: http.StatusBadRequest, message: "A valid image URL is required"}
+	imageURL := strings.TrimSpace(util.FirstString(payload, "imageUrl", "image_url"))
+	if !helper.IsAllowedImageURL(imageURL) {
+		return model.MediaImage{}, httpError{status: http.StatusBadRequest, message: "A valid image URL is required"}
 	}
-	category := strings.TrimSpace(stringValue(payload["category"]))
-	if !allowedImageCategories[category] {
-		return models.MediaImage{}, httpError{status: http.StatusBadRequest, message: "Invalid image category"}
+	category := strings.TrimSpace(util.StringValue(payload["category"]))
+	if !constant.AllowedImageCategories[category] {
+		return model.MediaImage{}, httpError{status: http.StatusBadRequest, message: "Invalid image category"}
 	}
 	if id == "" {
-		id = strings.TrimSpace(stringValue(payload["id"]))
+		id = strings.TrimSpace(util.StringValue(payload["id"]))
 	}
 	if id == "" {
 		id = strconv.FormatInt(time.Now().UnixMilli(), 10)
 	}
-	return models.MediaImage{ID: id, Title: title, ImageURL: imageURL, Category: category}, nil
+	return model.MediaImage{ID: id, Title: title, ImageURL: imageURL, Category: category}, nil
 }
 
 func bindJSON(c *gin.Context, target any) error {
@@ -728,193 +719,4 @@ func respondError(c *gin.Context, err error) {
 		return
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-}
-
-func isAllowedBilibiliPlayerURL(value string) bool {
-	parsed, err := url.Parse(value)
-	return err == nil && parsed.Scheme == "https" && parsed.Hostname() == "player.bilibili.com"
-}
-
-func isAllowedImageURL(value string) bool {
-	if strings.HasPrefix(value, "/") && !strings.HasPrefix(value, "//") {
-		return true
-	}
-	parsed, err := url.Parse(value)
-	return err == nil && (parsed.Scheme == "https" || parsed.Scheme == "http") && parsed.Hostname() != ""
-}
-
-func isAllowedWechatArticleURL(value string) bool {
-	parsed, err := url.Parse(value)
-	return err == nil &&
-		(parsed.Scheme == "https" || parsed.Scheme == "http") &&
-		strings.HasSuffix(parsed.Hostname(), "mp.weixin.qq.com")
-}
-
-func extractWechatArticleMeta(raw string) gin.H {
-	title := firstNonEmpty(
-		extractScriptString(raw, "msg_title"),
-		extractMetaContent(raw, "property", "og:title"),
-		extractMetaContent(raw, "name", "twitter:title"),
-		extractTitleTag(raw),
-	)
-	summary := firstNonEmpty(
-		extractScriptString(raw, "msg_desc"),
-		extractMetaContent(raw, "property", "og:description"),
-		extractMetaContent(raw, "name", "description"),
-	)
-	coverURL := firstNonEmpty(
-		extractScriptString(raw, "msg_cdn_url"),
-		extractMetaContent(raw, "property", "og:image"),
-		extractMetaContent(raw, "name", "twitter:image"),
-	)
-	publishedAt := firstNonEmpty(
-		extractPublishedDate(raw),
-		left(extractMetaContent(raw, "property", "article:published_time"), 10),
-	)
-	return gin.H{
-		"title":       cleanText(title),
-		"summary":     cleanText(summary),
-		"coverUrl":    cleanText(coverURL),
-		"publishedAt": cleanText(publishedAt),
-	}
-}
-
-func extractMetaContent(raw string, attribute string, value string) string {
-	attr := regexp.QuoteMeta(attribute)
-	val := regexp.QuoteMeta(value)
-	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)<meta\s+[^>]*` + attr + `=["']` + val + `["'][^>]*content=["']([^"']*)["'][^>]*>`),
-		regexp.MustCompile(`(?i)<meta\s+[^>]*content=["']([^"']*)["'][^>]*` + attr + `=["']` + val + `["'][^>]*>`),
-	}
-	for _, pattern := range patterns {
-		if match := pattern.FindStringSubmatch(raw); len(match) > 1 {
-			return html.UnescapeString(match[1])
-		}
-	}
-	return ""
-}
-
-func extractScriptString(raw string, variableName string) string {
-	pattern := regexp.MustCompile(`(?is)(?:var\s+)?` + regexp.QuoteMeta(variableName) + `\s*=\s*(['"])(.*?)\1`)
-	match := pattern.FindStringSubmatch(raw)
-	if len(match) < 3 {
-		return ""
-	}
-	return html.UnescapeString(strings.NewReplacer(`\/`, "/", `\n`, "\n", `\"`, `"`, `\'`, `'`).Replace(match[2]))
-}
-
-func extractTitleTag(raw string) string {
-	pattern := regexp.MustCompile(`(?is)<title[^>]*>(.*?)</title>`)
-	match := pattern.FindStringSubmatch(raw)
-	if len(match) < 2 {
-		return ""
-	}
-	return html.UnescapeString(match[1])
-}
-
-func extractPublishedDate(raw string) string {
-	pattern := regexp.MustCompile(`(?i)(?:var\s+)?ct\s*=\s*["'](\d{9,})["']`)
-	match := pattern.FindStringSubmatch(raw)
-	if len(match) < 2 {
-		return ""
-	}
-	seconds, err := strconv.ParseInt(match[1], 10, 64)
-	if err != nil {
-		return ""
-	}
-	return time.Unix(seconds, 0).UTC().Format("2006-01-02")
-}
-
-func cleanText(value string) string {
-	return strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(value, " "))
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func left(value string, length int) string {
-	if len(value) < length {
-		return value
-	}
-	return value[:length]
-}
-
-func firstString(payload map[string]any, keys ...string) string {
-	return stringValue(firstValueOrNil(payload, keys...))
-}
-
-func firstValueOrNil(payload map[string]any, keys ...string) any {
-	value, _ := firstValue(payload, keys...)
-	return value
-}
-
-func firstValue(payload map[string]any, keys ...string) (any, bool) {
-	for _, key := range keys {
-		if value, ok := payload[key]; ok {
-			return value, true
-		}
-	}
-	return nil, false
-}
-
-func valueOrDefault(value any, fallback any) any {
-	if value == nil || stringValue(value) == "" {
-		return fallback
-	}
-	return value
-}
-
-func stringValue(value any) string {
-	switch typed := value.(type) {
-	case string:
-		return typed
-	case json.Number:
-		return typed.String()
-	case nil:
-		return ""
-	default:
-		return strings.TrimSpace(strings.Trim(string(mustJSON(typed)), `"`))
-	}
-}
-
-func boolValue(value any) bool {
-	switch typed := value.(type) {
-	case bool:
-		return typed
-	case string:
-		return typed == "true" || typed == "1"
-	default:
-		return false
-	}
-}
-
-func intValue(value any) int {
-	switch typed := value.(type) {
-	case float64:
-		return int(typed)
-	case int:
-		return typed
-	case json.Number:
-		value, _ := typed.Int64()
-		return int(value)
-	case string:
-		value, _ := strconv.Atoi(typed)
-		return value
-	default:
-		return 0
-	}
-}
-
-func mustJSON(value any) []byte {
-	raw, err := json.Marshal(value)
-	if err != nil {
-		return nil
-	}
-	return raw
 }
