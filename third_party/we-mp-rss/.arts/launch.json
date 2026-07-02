@@ -1,0 +1,51 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python 调试程序: 当前文件",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            // "program": "${workspaceFolder}/test_article.py",
+            // "program": "${workspaceFolder}/tools/mdtools/pdf.py",
+            // "program": "${file}",
+            "console": "integratedTerminal",
+            // "args": ["./data/data2.txt"],
+            "args": ["-init","True","-job","False"],
+            // "args": ["-init","True","-job","True"],
+            "env": {
+                "DB":"mysql+pymysql://werss:Csol123654@121.36.92.45/werss?charset=utf8mb4",
+                // "DB":"mysql+pymysql://root:Xzl20260211_2219!@bj-cynosdbmysql-grp-av7b8bdo.sql.tencentcdb.com:29059/we_mp_rss?charset=utf8mb4",
+                "GATHER.CLEAN_HTML": "True",
+                // "WERSS_AUTH_WEB": "True",
+                "WERSS_AUTH_WEB": "False",
+                "RSS_LOCAL": "True",
+                "REDIS_URL": "redis://:redis_K5NtpH@62.234.73.131/0",
+                // "REDIS_URL": "redis://:123456@10.10.10.54/0",
+                // "PROXY_ENABLED": "True",
+                // "PROXY_DENO_URL":"https://clever-gnu-72.rachelos.deno.net/",
+                "HEADLESS": "False",
+                // "HEADLESS": "True",
+                // "BROWSER_TYPE": "webkit",
+                // "BROWSER_TYPE": "firefox",
+                "WE_RSS.AUTH": "True",
+                // "WE_RSS.AUTH": "True",
+                "CACHE.VIEWS.ENABLED": "False",
+                // "DEBUG": "True",
+                "DEBUG": "False",
+                "BROWSER_TYPE": "webkit",
+                // "GATHER.CONTENT_AUTO_CHECK": "False", // 自动检查内容更新
+                "GATHER.CONTENT_AUTO_CHECK": "True",
+                "GATHER.CONTENT_AUTO_INTERVAL": "1",
+                "DINGDING_WEBHOOK": "https://oapi.dingtalk.com/robot/send?access_token=af7f99c32895f79d9d61c57181f164b77027102a22f3b205dc15e2984690025c",
+                // "DINGDING_WEBHOOK": "https://oapi.dingtalk.com/robot/send?access_token=3e41438e2aa390e855d73e07dc10089a87cb5686acb7f807351ae363f427528e",
+                // "PLAYWRIGHT_BROWSERS_PATH": "./data/driver/",
+                // "PYTHONASYNCIODEBUG": "1"
+                "THREADS": "2"
+            }
+        }
+    ]
+}

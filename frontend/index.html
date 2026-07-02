@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>檐枫动漫社 | Yanfeng Anime Club</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Zcool+KuaiLe&family=Noto+Sans+SC:wght@400;700;900&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            retro: {
+              cream: '#fcf8e3',
+              paper: '#fff9c4',
+              red: '#c0392b',
+              darkRed: '#8b0000',
+              brown: '#5d4037',
+              black: '#2c2c2c',
+              orange: '#e67e22'
+            },
+            winter: {
+              primary: '#3498db',
+              secondary: '#ecf0f1',
+              accent: '#2980b9'
+            },
+            gma: {
+              primary: '#f1c40f',
+              secondary: '#000000',
+              accent: '#ffffff'
+            }
+          },
+          fontFamily: {
+            retro: ['"Zcool KuaiLe"', 'cursive'],
+            sans: ['"Noto Sans SC"', 'sans-serif'],
+          },
+          backgroundImage: {
+            'checker-pattern': "repeating-linear-gradient(45deg, var(--theme-primary) 25%, transparent 25%, transparent 75%, var(--theme-primary) 75%, var(--theme-primary)), repeating-linear-gradient(45deg, var(--theme-primary) 25%, transparent 25%, transparent 75%, var(--theme-primary) 75%, var(--theme-primary))"
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    html,
+    body,
+    #root {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      background-color: #080808;
+      color: #f6f0dc;
+      overflow: hidden;
+    }
+
+    /* Custom scrollbar */
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--theme-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--theme-primary);
+      border-radius: 5px;
+      border: 2px solid var(--theme-secondary);
+    }
+
+    .checker-bg {
+      background-color: var(--theme-secondary);
+      opacity: 0.8;
+      background-image: linear-gradient(45deg, var(--theme-primary) 25%, transparent 25%, transparent 75%, var(--theme-primary) 75%, var(--theme-primary)), linear-gradient(45deg, var(--theme-primary) 25%, transparent 25%, transparent 75%, var(--theme-primary) 75%, var(--theme-primary));
+      background-size: 20px 20px;
+      background-position: 0 0, 10px 10px;
+      transition: background-color 0.3s, background-image 0.3s;
+    }
+
+    /* Theme overrides via CSS variables for easier switching */
+
+    :root {
+      --theme-primary: #c0392b;
+      --theme-secondary: #fcf8e3;
+      --theme-accent: #5d4037;
+      --theme-border: #2c2c2c;
+      --theme-darkRed: #8b0000;
+      --theme-brown: #5d4037;
+      --site-scale: 0.9;
+      --site-viewport-width: calc(100vw / var(--site-scale));
+      --site-viewport-height: calc(100dvh / var(--site-scale));
+    }
+
+    #root {
+      overflow: hidden;
+      background: #080808;
+    }
+
+    .site-zoom-frame {
+      width: var(--site-viewport-width);
+      height: var(--site-viewport-height);
+      overflow: hidden;
+      transform: scale(var(--site-scale));
+      transform-origin: left top;
+    }
+
+    .site-viewport {
+      width: var(--site-viewport-width);
+      height: var(--site-viewport-height);
+    }
+
+    .site-full-panel {
+      height: var(--site-viewport-height);
+    }
+
+    .mobile-tab-scroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .mobile-tab-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --site-scale: 1;
+        --site-viewport-width: 100vw;
+        --site-viewport-height: 100dvh;
+      }
+
+      html,
+      body,
+      #root {
+        max-width: 100%;
+        overflow: hidden;
+      }
+
+      .site-zoom-frame,
+      .site-viewport,
+      .site-full-panel {
+        width: 100vw;
+        height: 100dvh;
+      }
+
+      .site-zoom-frame {
+        transform: none;
+      }
+
+      .mobile-site {
+        width: 100vw;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+    }
+
+    .site-media-stage {
+      min-height: calc(var(--site-viewport-height) - 9rem);
+    }
+
+    [data-theme='winter'] {
+      --theme-primary: #3498db;
+      --theme-secondary: #f0f8ff;
+      --theme-accent: #2c3e50;
+      --theme-border: #1a5276;
+      --theme-darkRed: #1a5276;
+      --theme-brown: #2c3e50;
+    }
+
+    [data-theme='gma'] {
+      --theme-primary: #d4ac0d;
+      /* Gold */
+      --theme-secondary: #1a1a1a;
+      /* Dark */
+      --theme-accent: #ffffff;
+      --theme-border: #f1c40f;
+      --theme-darkRed: #f1c40f;
+      --theme-brown: #ffffff;
+      color: white;
+    }
+
+    body[data-theme='gma'] {
+      background-color: #1a1a1a;
+    }
+
+    .theme-text {
+      color: var(--theme-primary);
+    }
+
+    .theme-bg {
+      background-color: var(--theme-primary);
+    }
+
+    .theme-border {
+      border-color: var(--theme-border);
+    }
+
+    /* Scoped scrollbar for the news container */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: var(--theme-secondary);
+      /* Match background */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: var(--theme-primary);
+      border-radius: 4px;
+      border: 2px solid var(--theme-secondary);
+    }
+
+    .page-panel {
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+      contain: paint;
+      will-change: clip-path, filter;
+    }
+
+    .page-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgb(0 0 0 / 0.38), transparent 18%, transparent 82%, rgb(0 0 0 / 0.52));
+      opacity: 0;
+      transition: opacity 1180ms cubic-bezier(0.68, 0.02, 0.88, 0.58);
+      z-index: 1;
+    }
+
+    .page-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgb(255 255 255 / 0.08), transparent 13%, transparent 83%, rgb(0 0 0 / 0.35)),
+        radial-gradient(circle at 12% 50%, rgb(200 50 42 / 0.12), transparent 36%);
+      opacity: 0.62;
+      transition: opacity 1180ms cubic-bezier(0.68, 0.02, 0.88, 0.58);
+      z-index: 2;
+    }
+
+    .page-panel[data-active="true"]::after {
+      opacity: 0.18;
+    }
+
+    .page-panel[data-state="outgoing"]::before {
+      opacity: 1;
+    }
+
+    .page-panel[data-state="outgoing"]::after {
+      opacity: 0.78;
+    }
+
+    .sunflower-signature {
+      position: absolute;
+      right: clamp(20px, 4vw, 64px);
+      bottom: clamp(18px, 4vh, 46px);
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 2px solid rgb(255 255 255 / 0.72);
+      background: rgb(8 8 8 / 0.42);
+      padding: 10px 12px;
+      color: #fff9d8;
+      box-shadow: 4px 4px 0 rgb(0 0 0 / 0.32);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .sunflower-signature::before {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border: 1px solid rgb(255 249 216 / 0.28);
+      pointer-events: none;
+    }
+
+    .sunflower-signature__flower {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #4a2318;
+      box-shadow:
+        0 -17px 0 -7px #ffd35a,
+        12px -12px 0 -7px #ffc247,
+        17px 0 0 -7px #ffd35a,
+        12px 12px 0 -7px #ffc247,
+        0 17px 0 -7px #ffd35a,
+        -12px 12px 0 -7px #ffc247,
+        -17px 0 0 -7px #ffd35a,
+        -12px -12px 0 -7px #ffc247,
+        inset 0 0 0 5px rgb(255 249 216 / 0.16);
+    }
+
+    .sunflower-signature__flower::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      width: 3px;
+      height: 18px;
+      transform: translateX(-50%) rotate(8deg);
+      background: #31481f;
+      box-shadow: 7px 8px 0 -2px #5b7c31;
+    }
+
+    .sunflower-signature__text {
+      display: grid;
+      gap: 2px;
+      min-width: 72px;
+      line-height: 1;
+    }
+
+    .sunflower-signature__text span {
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgb(255 249 216 / 0.62);
+    }
+
+    .sunflower-signature__text strong {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      color: #fff9d8;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .page-panel,
+      .page-panel::before,
+      .page-panel::after {
+        transition: none !important;
+        animation: none !important;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/index.tsx"></script>
+</body>
+
+</html>
