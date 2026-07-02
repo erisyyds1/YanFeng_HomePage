@@ -126,6 +126,25 @@ upsert_env "CERTBOT_WEBROOT" "$CERTBOT_WEBROOT_VALUE"
 mkdir -p "$LETSENCRYPT_DIR_VALUE" "$CERTBOT_WEBROOT_VALUE" "$(dirname "$CRON_FILE")" "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
 
+expected_live_dir="$LETSENCRYPT_DIR_VALUE/live/$DOMAIN"
+expected_fullchain="$expected_live_dir/fullchain.pem"
+
+link_existing_alt_cert() {
+  local alt_live_dir
+  alt_live_dir="$(find "$LETSENCRYPT_DIR_VALUE/live" -maxdepth 1 -type d -name "${DOMAIN}-*" 2>/dev/null | sort | tail -n 1 || true)"
+  if [ -n "$alt_live_dir" ] && ! has_valid_cert; then
+    echo "linking existing Let's Encrypt certificate: $(basename "$alt_live_dir") -> $DOMAIN"
+    rm -rf "$expected_live_dir"
+    ln -s "$(basename "$alt_live_dir")" "$expected_live_dir"
+  fi
+}
+
+has_valid_cert() {
+  [ -f "$expected_fullchain" ] && openssl x509 -checkend 2592000 -noout -in "$expected_fullchain" >/dev/null 2>&1
+}
+
+link_existing_alt_cert
+
 compose=(docker compose)
 for compose_file in "${COMPOSE_FILES[@]}"; do
   compose+=(-f "$compose_file")
@@ -134,7 +153,13 @@ done
 echo "starting web with ACME challenge support..."
 "${compose[@]}" up -d --build web
 
-if [ "$SKIP_CHALLENGE_CHECK" -eq 0 ]; then
+need_issue=1
+if [ "$FORCE_RENEWAL" -eq 0 ] && has_valid_cert; then
+  need_issue=0
+  echo "existing certificate is valid; skipping issuance."
+fi
+
+if [ "$need_issue" -eq 1 ] && [ "$SKIP_CHALLENGE_CHECK" -eq 0 ]; then
   token="preflight-$(date +%s)"
   mkdir -p "$CERTBOT_WEBROOT_VALUE/.well-known/acme-challenge"
   printf 'ok\n' > "$CERTBOT_WEBROOT_VALUE/.well-known/acme-challenge/$token"
@@ -156,7 +181,7 @@ ERROR
   rm -f "$CERTBOT_WEBROOT_VALUE/.well-known/acme-challenge/$token"
 fi
 
-placeholder_live_dir="$LETSENCRYPT_DIR_VALUE/live/$DOMAIN"
+placeholder_live_dir="$expected_live_dir"
 managed_renewal_conf="$LETSENCRYPT_DIR_VALUE/renewal/$DOMAIN.conf"
 if [ -f "$managed_renewal_conf" ] && ! grep -q '^fullchain =' "$managed_renewal_conf"; then
   echo "removing invalid renewal config before Let's Encrypt issuance..."
@@ -167,32 +192,36 @@ if [ -d "$placeholder_live_dir" ] && { [ ! -f "$managed_renewal_conf" ] || ! gre
   rm -rf "$placeholder_live_dir"
 fi
 
-certbot_args=(certonly --webroot -w /var/www/certbot --cert-name "$DOMAIN" --agree-tos --non-interactive --keep-until-expiring)
-if [ "$STAGING" -eq 1 ]; then
-  certbot_args+=(--staging)
-fi
-if [ "$FORCE_RENEWAL" -eq 1 ]; then
-  certbot_args+=(--force-renewal)
-fi
-if [ -n "$EMAIL" ]; then
-  certbot_args+=(--email "$EMAIL")
-else
-  certbot_args+=(--register-unsafely-without-email)
-fi
-certbot_args+=(-d "$DOMAIN")
-
-IFS=',' read -r -a extra_domains <<< "$EXTRA_DOMAINS_VALUE"
-for extra_domain in "${extra_domains[@]}"; do
-  extra_domain="$(echo "$extra_domain" | xargs)"
-  if [ -n "$extra_domain" ] && [ "$extra_domain" != "$DOMAIN" ]; then
-    certbot_args+=(-d "$extra_domain")
+if [ "$need_issue" -eq 1 ]; then
+  certbot_args=(certonly --webroot -w /var/www/certbot --cert-name "$DOMAIN" --agree-tos --non-interactive --keep-until-expiring)
+  if [ "$STAGING" -eq 1 ]; then
+    certbot_args+=(--staging)
   fi
-done
+  if [ "$FORCE_RENEWAL" -eq 1 ]; then
+    certbot_args+=(--force-renewal)
+  fi
+  if [ -n "$EMAIL" ]; then
+    certbot_args+=(--email "$EMAIL")
+  else
+    certbot_args+=(--register-unsafely-without-email)
+  fi
+  certbot_args+=(-d "$DOMAIN")
 
-docker run --rm \
-  -v "$LETSENCRYPT_DIR_VALUE:/etc/letsencrypt" \
-  -v "$CERTBOT_WEBROOT_VALUE:/var/www/certbot" \
-  certbot/certbot:latest "${certbot_args[@]}"
+  IFS=',' read -r -a extra_domains <<< "$EXTRA_DOMAINS_VALUE"
+  for extra_domain in "${extra_domains[@]}"; do
+    extra_domain="$(echo "$extra_domain" | xargs)"
+    if [ -n "$extra_domain" ] && [ "$extra_domain" != "$DOMAIN" ]; then
+      certbot_args+=(-d "$extra_domain")
+    fi
+  done
+
+  docker run --rm \
+    -v "$LETSENCRYPT_DIR_VALUE:/etc/letsencrypt" \
+    -v "$CERTBOT_WEBROOT_VALUE:/var/www/certbot" \
+    certbot/certbot:latest "${certbot_args[@]}"
+
+  link_existing_alt_cert
+fi
 
 "${compose[@]}" up -d --build web
 
