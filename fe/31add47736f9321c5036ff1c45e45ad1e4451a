@@ -1,0 +1,220 @@
+deploy/nginx/default.conf
+  s_34cc1149dc1129::t_ffc739665e893e 1-5,10-12,19-34,36,65,73 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a46929ebb4652df32ec7be2","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[1,5]},{"Range":[10,12]},{"Range":[19,34]},{"Single":36},{"Single":65},{"Single":73}]}]}
+README.md
+  s_34cc1149dc1129::t_8a8a8352f95181 102,104,121,123 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4692c9bb4652df32ec7c03","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":102},{"Single":104},{"Single":121},{"Single":123}]}]}
+docs/development-guide.md
+  s_34cc1149dc1129::t_d91f444a73c087 367,371,375,449-450,455 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a4692d5bb4652df32ec7c1e","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Single":367},{"Single":371},{"Single":375},{"Range":[449,450]},{"Single":455}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "fe31add47736f9321c5036ff1c45e45ad1e4451a",
+  "prompts": {},
+  "sessions": {
+    "s_34cc1149dc1129": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a45eea2bb4652df32ec6397",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "aijunbo <aijunbo@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "README.md": [
+      {
+        "hash": "s_34cc1149dc1129::t_8a8a8352f95181",
+        "line_ranges": [
+          {
+            "Single": 102
+          },
+          {
+            "Single": 104
+          },
+          {
+            "Single": 121
+          },
+          {
+            "Single": 123
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4692c9bb4652df32ec7c03",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 102
+              },
+              {
+                "Single": 104
+              },
+              {
+                "Single": 121
+              },
+              {
+                "Single": 123
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "deploy/nginx/default.conf": [
+      {
+        "hash": "s_34cc1149dc1129::t_ffc739665e893e",
+        "line_ranges": [
+          {
+            "Range": [
+              1,
+              5
+            ]
+          },
+          {
+            "Range": [
+              10,
+              12
+            ]
+          },
+          {
+            "Range": [
+              19,
+              34
+            ]
+          },
+          {
+            "Single": 36
+          },
+          {
+            "Single": 65
+          },
+          {
+            "Single": 73
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a46929ebb4652df32ec7be2",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  1,
+                  5
+                ]
+              },
+              {
+                "Range": [
+                  10,
+                  12
+                ]
+              },
+              {
+                "Range": [
+                  19,
+                  34
+                ]
+              },
+              {
+                "Single": 36
+              },
+              {
+                "Single": 65
+              },
+              {
+                "Single": 73
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "docs/development-guide.md": [
+      {
+        "hash": "s_34cc1149dc1129::t_d91f444a73c087",
+        "line_ranges": [
+          {
+            "Single": 367
+          },
+          {
+            "Single": 371
+          },
+          {
+            "Single": 375
+          },
+          {
+            "Range": [
+              449,
+              450
+            ]
+          },
+          {
+            "Single": 455
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a4692d5bb4652df32ec7c1e",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Single": 367
+              },
+              {
+                "Single": 371
+              },
+              {
+                "Single": 375
+              },
+              {
+                "Range": [
+                  449,
+                  450
+                ]
+              },
+              {
+                "Single": 455
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_34cc1149dc1129": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_34cc1149dc1129::t_8a8a8352f95181": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_34cc1149dc1129::t_d91f444a73c087": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_34cc1149dc1129::t_ffc739665e893e": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
