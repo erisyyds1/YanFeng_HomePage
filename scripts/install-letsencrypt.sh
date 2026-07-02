@@ -156,6 +156,13 @@ ERROR
   rm -f "$CERTBOT_WEBROOT_VALUE/.well-known/acme-challenge/$token"
 fi
 
+placeholder_live_dir="$LETSENCRYPT_DIR_VALUE/live/$DOMAIN"
+managed_renewal_conf="$LETSENCRYPT_DIR_VALUE/renewal/$DOMAIN.conf"
+if [ -d "$placeholder_live_dir" ] && [ ! -f "$managed_renewal_conf" ]; then
+  echo "removing temporary placeholder certificate before Let's Encrypt issuance..."
+  rm -rf "$placeholder_live_dir"
+fi
+
 certbot_args=(certonly --webroot -w /var/www/certbot --agree-tos --non-interactive --keep-until-expiring)
 if [ "$STAGING" -eq 1 ]; then
   certbot_args+=(--staging)
