@@ -36,3 +36,4 @@ public/uploads/*
 .deploy_ssh.exp
 .deploy/
 backups/
+deploy/certs/

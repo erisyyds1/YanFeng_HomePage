@@ -99,6 +99,29 @@ sudo scripts/install-db-backup-cron.sh
 
 完整开发与运维说明见 [`docs/development-guide.md`](docs/development-guide.md)。
 
+## HTTPS 与 Cloudflare Full (strict)
+
+生产环境通过 Cloudflare 橙云代理访问域名，源站 Docker Nginx 同时监听 `80` 和 `443`。`443` 使用免费的 Let's Encrypt 证书。
+
+服务器 `.env` 需要包含：
+
+```ini
+HTTPS_PORT=443
+TLS_DOMAIN=yanfeng.club
+LETSENCRYPT_DIR=/etc/letsencrypt
+CERTBOT_WEBROOT=/var/www/certbot
+```
+
+首次申请证书：
+
+```bash
+scripts/install-letsencrypt.sh --domain yanfeng.club --extra-domains www.yanfeng.club
+```
+
+脚本会启动 Web、申请证书、重启 Web，并安装每日续期任务。确认 `https://yanfeng.club` 正常后，在 Cloudflare 将 SSL/TLS 模式切到 `Full (strict)`。
+
+如果申请失败，通常是 Cloudflare 把 HTTP 强制跳转到 HTTPS，但源站还没有正式证书。首次申请时需要临时关闭 Cloudflare 的 `Always Use HTTPS`，或把 DNS 记录临时切到 DNS only，证书签发后再开启橙云和 `Full (strict)`。
+
 停止服务：
 
 ```bash

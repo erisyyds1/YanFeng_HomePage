@@ -5,6 +5,10 @@ services:
       dockerfile: deploy/nginx/Dockerfile
     ports:
       - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - "${LETSENCRYPT_DIR:-./deploy/certs/letsencrypt}:/etc/letsencrypt"
+      - "${CERTBOT_WEBROOT:-./deploy/certs/www}:/var/www/certbot"
     depends_on:
       - api
     restart: unless-stopped

@@ -364,6 +364,94 @@ docker compose -f docker-compose.yml -f docker-compose.2c2g.yml restart we-mp-rs
 docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d api
 ```
 
+## HTTPS 与 Cloudflare Full (strict)
+
+### 目的
+
+生产环境使用 Cloudflare 橙云代理域名，源站服务器需要提供 `443` HTTPS 服务，Cloudflare 才能使用 `Full (strict)` 模式安全回源。
+
+项目的 Docker Nginx 配置：
+
+- `80`：重定向到 HTTPS
+- `80` 和 `443`：都支持 `/.well-known/acme-challenge/`，用于 Let's Encrypt HTTP-01 验证
+- `443`：使用 Let's Encrypt 免费证书
+- 证书容器路径：`/etc/letsencrypt/live/yanfeng.club/fullchain.pem`
+- 私钥容器路径：`/etc/letsencrypt/live/yanfeng.club/privkey.pem`
+
+### 环境变量
+
+服务器 `.env` 需要配置：
+
+```ini
+HTTPS_PORT=443
+TLS_DOMAIN=yanfeng.club
+LETSENCRYPT_DIR=/etc/letsencrypt
+CERTBOT_WEBROOT=/var/www/certbot
+```
+
+`LETSENCRYPT_DIR` 是宿主机证书目录，会挂载进 Nginx 容器。`CERTBOT_WEBROOT` 是 HTTP-01 验证文件目录。
+
+### 申请 Let's Encrypt 证书
+
+使用方法：
+
+```bash
+scripts/install-letsencrypt.sh --domain yanfeng.club --extra-domains www.yanfeng.club
+```
+
+参数说明：
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--domain NAME` | 主域名 | `yanfeng.club` |
+| `--extra-domains LIST` | 逗号分隔的附加域名 | `www.yanfeng.club` |
+| `--email EMAIL` | Let's Encrypt 通知邮箱 | 可不填 |
+| `--letsencrypt-dir PATH` | 证书目录 | `/etc/letsencrypt` |
+| `--webroot PATH` | ACME challenge 目录 | `/var/www/certbot` |
+| `--staging` | 使用 Let's Encrypt 测试环境 | 不启用 |
+| `--force-renewal` | 强制重新签发 | 不启用 |
+| `--skip-challenge-check` | 跳过申请前的 HTTP 校验 | 不启用 |
+
+返回值：
+
+- 成功：退出码 `0`，证书写入 `LETSENCRYPT_DIR`，并安装自动续期 cron
+- 失败：退出码非 `0`
+
+示例：
+
+```bash
+scripts/install-letsencrypt.sh \
+  --domain yanfeng.club \
+  --extra-domains www.yanfeng.club
+```
+
+脚本会执行：
+
+- 写入 `.env` 的 HTTPS 配置
+- 启动 Web 容器
+- 通过 `certbot/certbot` Docker 镜像申请证书
+- 重启 Web 容器
+- 写入 `/etc/cron.d/yanfeng-homepage-letsencrypt` 每日续期任务
+
+### 验证
+
+```bash
+curl -k -I https://127.0.0.1
+curl -I https://yanfeng.club
+```
+
+源站 `443` 正常后，在 Cloudflare 修改：
+
+```text
+SSL/TLS -> Overview -> Encryption mode -> Full (strict)
+```
+
+首次申请如果失败，通常是 Cloudflare 已经把 HTTP 强制跳到 HTTPS，但源站还没有正式证书。处理方式：
+
+- 临时关闭 Cloudflare 的 `Always Use HTTPS`
+- 或将 DNS 记录临时切到 DNS only
+- 证书签发成功后，再开启橙云并切到 `Full (strict)`
+
 ## 服务器部署流程
 
 首次部署：

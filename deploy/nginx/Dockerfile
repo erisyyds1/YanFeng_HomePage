@@ -10,5 +10,8 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
+RUN apk add --no-cache openssl
+
 COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY deploy/nginx/40-ensure-letsencrypt-placeholder.sh /docker-entrypoint.d/40-ensure-letsencrypt-placeholder.sh
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
