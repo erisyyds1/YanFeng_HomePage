@@ -2,6 +2,8 @@ FROM golang:1.25-bookworm AS builder
 
 WORKDIR /src
 
+ENV GOPROXY=https://goproxy.cn,direct
+
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
