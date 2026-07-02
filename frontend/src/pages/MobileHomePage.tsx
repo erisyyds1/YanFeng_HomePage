@@ -94,7 +94,7 @@ const MobileHomePage: React.FC<MobileHomePageProps> = ({
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const sections = Array.from(scroller.querySelectorAll<HTMLElement>('[data-mobile-section]'));
+    const sections: HTMLElement[] = Array.from(scroller.querySelectorAll<HTMLElement>('[data-mobile-section]'));
     if (sections.length === 0) return;
 
     const observer = new IntersectionObserver(
