@@ -1,7 +1,20 @@
 import React from 'react';
 import { ArrowRight, Check, ChevronRight } from 'lucide-react';
+import BorderGlow from '../components/BorderGlow';
 import { INTEREST_GROUPS, OFFICIAL_GROUPS } from '../data/siteContent';
 import type { OfficialGroup } from '../types';
+
+const GROUP_ACTIVITY_GLOW_COLORS = ['#c8322a', '#f4d06f', '#ffffff'];
+const GROUP_ACTIVITY_GLOW_PROPS = {
+  edgeSensitivity: 12,
+  glowColor: '4 78 62',
+  borderRadius: 0,
+  glowRadius: 14,
+  glowIntensity: 0.62,
+  coneSpread: 30,
+  colors: GROUP_ACTIVITY_GLOW_COLORS,
+  fillOpacity: 0.14
+};
 
 interface GroupsPageProps {
   selectedGroup: number;
@@ -120,9 +133,9 @@ const GroupsPage: React.FC<GroupsPageProps> = ({ selectedGroup, copiedGroupTitle
                 <p className="mb-3 text-xs font-black tracking-[0.28em] text-[#c8322a]">COMMON ACTIVITIES</p>
                 <div className="flex flex-wrap gap-2">
                   {activeGroup.activities.map((activity) => (
-                    <span key={activity} className="border border-white/15 px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">
-                      {activity}
-                    </span>
+                    <BorderGlow key={activity} {...GROUP_ACTIVITY_GLOW_PROPS} backgroundColor="#111111" className="border-glow-chip shrink-0">
+                      <span className="px-3 py-2 text-xs font-black tracking-[0.12em] text-white/75">{activity}</span>
+                    </BorderGlow>
                   ))}
                 </div>
               </div>
