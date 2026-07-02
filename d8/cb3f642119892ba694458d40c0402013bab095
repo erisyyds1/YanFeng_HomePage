@@ -1,0 +1,66 @@
+scripts/install-letsencrypt.sh
+  s_34cc1149dc1129::t_8578a5be3951c7 159-165 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a468f66bb4652df32ec7aa4","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[159,165]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "d8cb3f642119892ba694458d40c0402013bab095",
+  "prompts": {},
+  "sessions": {
+    "s_34cc1149dc1129": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a45eea2bb4652df32ec6397",
+        "model": "gpt-5.5__dev"
+      },
+      "human_author": "aijunbo <aijunbo@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "scripts/install-letsencrypt.sh": [
+      {
+        "hash": "s_34cc1149dc1129::t_8578a5be3951c7",
+        "line_ranges": [
+          {
+            "Range": [
+              159,
+              165
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a468f66bb4652df32ec7aa4",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  159,
+                  165
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_34cc1149dc1129": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_34cc1149dc1129::t_8578a5be3951c7": {
+      "tool": "trae",
+      "conversation_id": "6a45eea2bb4652df32ec6397",
+      "session_id": "6a45eea2bb4652df32ec6397",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
