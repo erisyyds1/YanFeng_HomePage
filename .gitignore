@@ -34,3 +34,5 @@ public/uploads/*
 *.sw?
 
 .deploy_ssh.exp
+.deploy/
+backups/

@@ -10,6 +10,10 @@
     "test:wechat-archive": "node scripts/test-wechat-archive-pagination.mjs",
     "test:we-mp-rss-config": "scripts/test-configure-we-mp-rss-env.sh",
     "configure:we-mp-rss": "scripts/configure-we-mp-rss-env.sh --yes",
+    "deploy": "scripts/deploy.sh",
+    "rollback": "scripts/rollback.sh",
+    "backup:db": "scripts/backup-db.sh",
+    "install:db-backup-cron": "scripts/install-db-backup-cron.sh",
     "build:we-mp-rss": "scripts/configure-we-mp-rss-env.sh --yes && docker compose build we-mp-rss",
     "compose:up": "docker compose up -d --build",
     "compose:down": "docker compose down"

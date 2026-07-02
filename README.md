@@ -81,6 +81,24 @@ docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d --build
 
 `we-mp-rss` 默认只绑定 `127.0.0.1:8001`，本机可访问，服务器不会对公网暴露该端口。
 
+便捷上线、回滚和备份脚本：
+
+```bash
+# 上线，默认拉取 cyan_opt 并重建 api/web
+scripts/deploy.sh
+
+# 回滚到上一次部署前的 revision
+scripts/rollback.sh
+
+# 立即备份 MySQL 与 we-mp-rss SQLite，默认最多保留 2 份
+scripts/backup-db.sh
+
+# 在服务器安装每日自动备份任务
+sudo scripts/install-db-backup-cron.sh
+```
+
+完整开发与运维说明见 [`docs/development-guide.md`](docs/development-guide.md)。
+
 停止服务：
 
 ```bash
