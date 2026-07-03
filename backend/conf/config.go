@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,11 +34,8 @@ func Load() (Config, error) {
 
 	v.SetDefault("PORT", 3001)
 	v.SetDefault("CORS_ORIGIN", "*")
-	v.SetDefault("ADMIN_PASSWORD", "18522")
-	v.SetDefault("ADMIN_SESSION_SECRET", "dev-only-change-me")
 	v.SetDefault("JWT_TTL", "6h")
 	v.SetDefault("DB_DRIVER", "mysql")
-	v.SetDefault("DB_DSN", "root:password@tcp(127.0.0.1:3306)/yanfeng_homepage?charset=utf8mb4&parseTime=True&loc=Local")
 	v.SetDefault("PUBLIC_DIR", filepath.Join("..", "public"))
 	v.SetDefault("SEED_PATH", filepath.Join("..", "db.json"))
 	v.SetDefault("DIFY_API_URL", "https://api.dify.ai/v1")
@@ -51,15 +49,28 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	adminPassword := strings.TrimSpace(v.GetString("ADMIN_PASSWORD"))
+	if adminPassword == "" {
+		return Config{}, errors.New("ADMIN_PASSWORD is required")
+	}
+	jwtSecret := strings.TrimSpace(firstNonEmpty(v.GetString("JWT_SECRET"), v.GetString("ADMIN_SESSION_SECRET")))
+	if jwtSecret == "" {
+		return Config{}, errors.New("ADMIN_SESSION_SECRET or JWT_SECRET is required")
+	}
+	dbDriver := v.GetString("DB_DRIVER")
+	dbDSN := strings.TrimSpace(v.GetString("DB_DSN"))
+	if dbDriver == "mysql" && dbDSN == "" {
+		return Config{}, errors.New("DB_DSN is required")
+	}
 
 	return Config{
 		Port:                  v.GetInt("PORT"),
 		CORSOrigin:            v.GetString("CORS_ORIGIN"),
-		AdminPassword:         v.GetString("ADMIN_PASSWORD"),
-		JWTSecret:             firstNonEmpty(v.GetString("JWT_SECRET"), v.GetString("ADMIN_SESSION_SECRET")),
+		AdminPassword:         adminPassword,
+		JWTSecret:             jwtSecret,
 		JWTTTL:                ttl,
-		DBDriver:              v.GetString("DB_DRIVER"),
-		DBDSN:                 v.GetString("DB_DSN"),
+		DBDriver:              dbDriver,
+		DBDSN:                 dbDSN,
 		PublicDir:             v.GetString("PUBLIC_DIR"),
 		SeedPath:              v.GetString("SEED_PATH"),
 		DifyAPIKey:            v.GetString("DIFY_API_KEY"),
@@ -77,10 +88,7 @@ func readOptionalEnv(v *viper.Viper, path string) {
 }
 
 func (c Config) SigningSecret() string {
-	if c.JWTSecret != "" {
-		return c.JWTSecret
-	}
-	return "dev-only-change-me"
+	return c.JWTSecret
 }
 
 func firstNonEmpty(values ...string) string {

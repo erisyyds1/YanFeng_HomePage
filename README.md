@@ -239,8 +239,8 @@ Docker Compose 相关变量：
 HTTP_PORT=80
 MYSQL_DATABASE=yanfeng_homepage
 MYSQL_USER=yanfeng
-MYSQL_PASSWORD=yanfeng_password
-MYSQL_ROOT_PASSWORD=root_password
+MYSQL_PASSWORD=<生成一个强密码>
+MYSQL_ROOT_PASSWORD=<生成另一个强密码>
 ```
 
 公众号 RSS 同步变量：

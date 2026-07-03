@@ -14,7 +14,10 @@ import os
 from core.print import print_info, print_error
 def init_user(_db: Db):
     try:
-      username,password=os.getenv("USERNAME", "admin"),os.getenv("PASSWORD", "admin@123")
+      username,password=os.getenv("USERNAME", "admin"),os.getenv("PASSWORD")
+      if not password:
+          print_error("PASSWORD 环境变量未配置，跳过管理员用户初始化")
+          return
       session=_db.get_session()
       
       # 检查用户是否已存在
