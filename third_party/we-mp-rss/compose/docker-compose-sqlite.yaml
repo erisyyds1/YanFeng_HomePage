@@ -9,7 +9,7 @@ services:
     environment:
       - DB=sqlite:///data/we_mp_rss.db
       - USERNAME=admin
-      - PASSWORD=admin@123
+      - PASSWORD=${PASSWORD:?PASSWORD is required}
     volumes:
       - ./data:/app/data
 

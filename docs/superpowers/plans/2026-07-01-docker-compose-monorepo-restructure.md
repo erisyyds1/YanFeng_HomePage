@@ -262,11 +262,11 @@ services:
     environment:
       PORT: "3001"
       DB_DRIVER: mysql
-      DB_DSN: "${MYSQL_USER:-yanfeng}:${MYSQL_PASSWORD:-yanfeng_password}@tcp(mysql:3306)/${MYSQL_DATABASE:-yanfeng_homepage}?charset=utf8mb4&parseTime=True&loc=Local"
+        DB_DSN: "${MYSQL_USER:-yanfeng}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@tcp(mysql:3306)/${MYSQL_DATABASE:-yanfeng_homepage}?charset=utf8mb4&parseTime=True&loc=Local"
       PUBLIC_DIR: /app/public
       SEED_PATH: /app/seed/db.json
-      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-18522}"
-      ADMIN_SESSION_SECRET: "${ADMIN_SESSION_SECRET:-replace-with-a-long-random-secret}"
+        ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+        ADMIN_SESSION_SECRET: "${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET is required}"
       DIFY_API_KEY: "${DIFY_API_KEY:-}"
       DIFY_API_URL: "${DIFY_API_URL:-https://api.dify.ai/v1}"
     volumes:
@@ -280,8 +280,8 @@ services:
     environment:
       MYSQL_DATABASE: "${MYSQL_DATABASE:-yanfeng_homepage}"
       MYSQL_USER: "${MYSQL_USER:-yanfeng}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-yanfeng_password}"
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_password}"
+        MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}"
+        MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -317,8 +317,8 @@ Add:
 ```ini
 MYSQL_DATABASE=yanfeng_homepage
 MYSQL_USER=yanfeng
-MYSQL_PASSWORD=yanfeng_password
-MYSQL_ROOT_PASSWORD=root_password
+MYSQL_PASSWORD=<生成一个强密码>
+MYSQL_ROOT_PASSWORD=<生成另一个强密码>
 HTTP_PORT=80
 ```
 
@@ -433,7 +433,7 @@ If Docker is available, get an admin JWT:
 ```bash
 TOKEN=$(curl -fsS \
   -H 'Content-Type: application/json' \
-  -d '{"message":"18522"}' \
+  -d '{"message":"<ADMIN_PASSWORD>"}' \
   http://localhost:${HTTP_PORT:-80}/api/admin/login \
   | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 ```

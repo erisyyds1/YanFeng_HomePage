@@ -79,12 +79,12 @@ Compose 环境变量映射：
 - `mysql`
   - `MYSQL_DATABASE=${MYSQL_DATABASE:-yanfeng_homepage}`
   - `MYSQL_USER=${MYSQL_USER:-yanfeng}`
-  - `MYSQL_PASSWORD=${MYSQL_PASSWORD:-yanfeng_password}`
-  - `MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}`
+  - `MYSQL_PASSWORD=${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}`
+  - `MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}`
 - `api`
   - `PORT=3001`
   - `DB_DRIVER=mysql`
-  - `DB_DSN=${MYSQL_USER:-yanfeng}:${MYSQL_PASSWORD:-yanfeng_password}@tcp(mysql:3306)/${MYSQL_DATABASE:-yanfeng_homepage}?charset=utf8mb4&parseTime=True&loc=Local`
+  - `DB_DSN=${MYSQL_USER:-yanfeng}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@tcp(mysql:3306)/${MYSQL_DATABASE:-yanfeng_homepage}?charset=utf8mb4&parseTime=True&loc=Local`
   - `PUBLIC_DIR=/app/public`
   - `SEED_PATH=/app/seed/db.json`
   - `ADMIN_PASSWORD=${ADMIN_PASSWORD}`

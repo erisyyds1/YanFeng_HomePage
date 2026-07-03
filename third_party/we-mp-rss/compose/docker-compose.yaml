@@ -48,7 +48,7 @@ services:
     env_file:
       - ../.env
     environment:
-      DB: mysql+pymysql://rss_user:pass123456@db-mp/we_mp_rss?charset=utf8mb4
+      DB: mysql+pymysql://${MYSQL_USER:?MYSQL_USER is required}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@db-mp/${MYSQL_DATABASE:?MYSQL_DATABASE is required}?charset=utf8mb4
       REDIS_URL: redis://redis:6379/0
       PROXY_HTTP_URL: http://singbox:7890
     ports:

@@ -18,8 +18,8 @@ docker compose up -d --build
 | --- | --- | --- |
 | `MYSQL_DATABASE` | `yanfeng_homepage` | 应用数据库名 |
 | `MYSQL_USER` | `yanfeng` | 应用数据库用户 |
-| `MYSQL_PASSWORD` | `yanfeng_password` | 应用数据库密码 |
-| `MYSQL_ROOT_PASSWORD` | `root_password` | MySQL root 密码 |
+| `MYSQL_PASSWORD` | 无，必须在 `.env` 中配置 | 应用数据库密码 |
+| `MYSQL_ROOT_PASSWORD` | 无，必须在 `.env` 中配置 | MySQL root 密码 |
 
 ## 返回值
 
