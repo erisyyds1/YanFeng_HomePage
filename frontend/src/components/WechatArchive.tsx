@@ -361,10 +361,10 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
       href={item.wechatUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group h-full overflow-hidden border-4 border-[var(--theme-border)] bg-white p-2 shadow-[6px_6px_0px_var(--theme-border)] transition-all hover:-translate-y-1 hover:shadow-[3px_3px_0px_var(--theme-border)]"
+      className="group h-full overflow-hidden border-2 border-[var(--theme-border)] bg-white p-1.5 shadow-[4px_4px_0px_var(--theme-border)] transition-all hover:-translate-y-1 hover:shadow-[2px_2px_0px_var(--theme-border)]"
     >
       <div className="flex h-full flex-col bg-[#111] text-white">
-        <div className="relative aspect-video overflow-hidden border-b-4 border-[var(--theme-border)] bg-black">
+        <div className="relative aspect-video overflow-hidden border-b-2 border-[var(--theme-border)] bg-black">
           {item.coverUrl ? (
             <img
               src={item.coverUrl}
@@ -378,29 +378,29 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
             />
           ) : (
             <div className="grid h-full place-items-center bg-[#161616] text-white/35">
-              <NotebookPen className="h-14 w-14" />
+              <NotebookPen className="h-9 w-9" />
             </div>
           )}
-          <div className="absolute bottom-2 left-2 bg-[#c8322a] px-2 py-1 text-xs font-black tracking-[0.12em] text-white">
+          <div className="absolute bottom-1.5 left-1.5 bg-[#c8322a] px-1.5 py-1 text-[10px] font-black tracking-[0.08em] text-white">
             {getCategoryLabel(item)}
           </div>
           {!item.isPublished && (
-            <div className="absolute right-2 top-2 bg-black/80 px-2 py-1 text-xs font-black tracking-[0.12em] text-white">
+            <div className="absolute right-1.5 top-1.5 bg-black/80 px-1.5 py-1 text-[10px] font-black tracking-[0.08em] text-white">
               草稿
             </div>
           )}
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <div className="flex items-start justify-between gap-4">
-            <p className="font-mono text-xs font-black tracking-[0.18em] text-[#c8322a]">{item.publishedAt}</p>
-            <ExternalLink className="h-4 w-4 shrink-0 text-white/45 transition group-hover:text-[#c8322a]" />
+        <div className="flex flex-1 flex-col p-3">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-mono text-[10px] font-black tracking-[0.12em] text-[#c8322a]">{item.publishedAt}</p>
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-white/45 transition group-hover:text-[#c8322a]" />
           </div>
-          <h3 className="mt-3 text-2xl font-black leading-tight tracking-[-0.03em] text-white">{item.title}</h3>
-          <p className="mt-4 line-clamp-3 text-sm font-bold leading-relaxed text-white/60">{item.summary}</p>
-          <div className="mt-auto flex items-end justify-between gap-3 pt-6">
-            <span className="inline-flex items-center gap-2 border border-white/18 px-3 py-2 text-xs font-black tracking-[0.14em] text-white/70">
-              <NotebookPen className="h-3.5 w-3.5 text-[#c8322a]" />
+          <h3 className="mt-2 text-lg font-black leading-tight text-white">{item.title}</h3>
+          <p className="mt-2 line-clamp-2 text-xs font-bold leading-snug text-white/60">{item.summary}</p>
+          <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+            <span className="inline-flex min-w-0 items-center gap-1.5 border border-white/18 px-2 py-1.5 text-[10px] font-black tracking-[0.08em] text-white/70">
+              <NotebookPen className="h-3 w-3 shrink-0 text-[#c8322a]" />
               {item.displaySourceName || item.sourceName || '涧桐现视研'}
             </span>
 
@@ -409,18 +409,18 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
                 <button
                   type="button"
                   onClick={() => openArticleEditor(item)}
-                  className="p-1 text-white/45 transition-colors hover:text-[#c8322a]"
+                  className="p-0.5 text-white/45 transition-colors hover:text-[#c8322a]"
                   title="编辑推文"
                 >
-                  <Edit3 size={19} />
+                  <Edit3 size={17} />
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleDelete(item.id)}
-                  className="p-1 text-white/45 transition-colors hover:text-red-500"
+                  className="p-0.5 text-white/45 transition-colors hover:text-red-500"
                   title="删除推文"
                 >
-                  <Trash2 size={20} />
+                  <Trash2 size={18} />
                 </button>
               </span>
             )}
@@ -689,7 +689,7 @@ const WechatArchive: React.FC<WechatArchiveProps> = ({ isEditMode = false }) => 
         </RetroCard>
       )}
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {visibleArticles.length > 0 ? (
           visibleArticles.map(renderArticleCard)
         ) : (
