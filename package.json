@@ -1,23 +1,22 @@
 {
-  "name": "yanfeng-club-portal",
+  "name": "yanfeng-homepage",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "api": "node server.mjs"
-  },
-  "dependencies": {
-    "lucide-react": "^0.555.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:api": "cd backend && go run ./cmd/server",
+    "build:frontend": "cd frontend && npm run build",
+    "test:backend": "cd backend && go test ./...",
+    "test:wechat-archive": "node scripts/test-wechat-archive-pagination.mjs",
+    "test:we-mp-rss-config": "scripts/test-configure-we-mp-rss-env.sh",
+    "configure:we-mp-rss": "scripts/configure-we-mp-rss-env.sh --yes",
+    "deploy": "scripts/deploy.sh",
+    "rollback": "scripts/rollback.sh",
+    "backup:db": "scripts/backup-db.sh",
+    "install:db-backup-cron": "scripts/install-db-backup-cron.sh",
+    "install:letsencrypt": "scripts/install-letsencrypt.sh",
+    "build:we-mp-rss": "scripts/configure-we-mp-rss-env.sh --yes && docker compose build we-mp-rss",
+    "compose:up": "docker compose up -d --build",
+    "compose:down": "docker compose down"
   }
 }

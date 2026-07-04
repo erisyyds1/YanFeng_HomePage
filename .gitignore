@@ -32,3 +32,8 @@ public/uploads/*
 *.njsproj
 *.sln
 *.sw?
+
+.deploy_ssh.exp
+.deploy/
+backups/
+deploy/certs/

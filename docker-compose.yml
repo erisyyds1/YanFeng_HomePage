@@ -1,0 +1,90 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - "${LETSENCRYPT_DIR:-./deploy/certs/letsencrypt}:/etc/letsencrypt"
+      - "${CERTBOT_WEBROOT:-./deploy/certs/www}:/var/www/certbot"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      PORT: "3001"
+      DB_DRIVER: mysql
+      DB_DSN: "${MYSQL_USER:-yanfeng}:${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}@tcp(mysql:3306)/${MYSQL_DATABASE:-yanfeng_homepage}?charset=utf8mb4&parseTime=True&loc=Local"
+      PUBLIC_DIR: /app/public
+      SEED_PATH: /app/seed/db.json
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+      ADMIN_SESSION_SECRET: "${ADMIN_SESSION_SECRET:?ADMIN_SESSION_SECRET is required}"
+      JWT_TTL: "${JWT_TTL:-6h}"
+      DIFY_API_KEY: "${DIFY_API_KEY:-}"
+      DIFY_API_URL: "${DIFY_API_URL:-https://api.dify.ai/v1}"
+      WECHAT_RSS_BASE_URL: "${WECHAT_RSS_BASE_URL:-http://we-mp-rss:8001}"
+      WECHAT_RSS_FEED_URLS: "${WECHAT_RSS_FEED_URLS:-}"
+      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_MAX_ARTICLES:-2000}"
+      WECHAT_RSS_DISPLAY_NAME_MAP: "${WECHAT_RSS_DISPLAY_NAME_MAP:-}"
+    volumes:
+      - uploads-data:/app/public/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      we-mp-rss:
+        condition: service_started
+    restart: unless-stopped
+
+  we-mp-rss:
+    image: "${WE_MP_RSS_LOCAL_IMAGE:-yanfeng-homepage/we-mp-rss:local}"
+    build:
+      context: ./third_party/we-mp-rss
+      dockerfile: ../../deploy/we-mp-rss/Dockerfile
+      args:
+        WE_MP_RSS_BROWSER_TYPE: "${WE_MP_RSS_BROWSER_TYPE:-chromium}"
+    shm_size: "${WE_MP_RSS_SHM_SIZE:-1gb}"
+    environment:
+      TZ: Asia/Shanghai
+      BROWSER_TYPE: "${WE_MP_RSS_BROWSER_TYPE:-chromium}"
+      HEADLESS: "${WE_MP_RSS_HEADLESS:-true}"
+      WERSS_AUTH_WEB: "${WE_MP_RSS_AUTH_WEB:-False}"
+      RSS_PAGE_SIZE: "${WE_MP_RSS_PAGE_SIZE:-100}"
+    ports:
+      - "${WE_MP_RSS_BIND:-127.0.0.1}:${WE_MP_RSS_PORT:-8001}:8001"
+    volumes:
+      - wemp-rss-data:/app/data
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-yanfeng_homepage}"
+      MYSQL_USER: "${MYSQL_USER:-yanfeng}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  uploads-data:
+  wemp-rss-data:

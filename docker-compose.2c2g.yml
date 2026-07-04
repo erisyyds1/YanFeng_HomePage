@@ -1,0 +1,65 @@
+# Low-resource override for a 2 vCPU / 2 GiB RAM / 40 GiB disk / 3 Mbps server.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.2c2g.yml up -d --build
+#
+# Notes:
+#   - Keep we-mp-rss bound to 127.0.0.1 from .env; use SSH tunnel for admin access.
+#   - Build images before peak traffic when possible; image builds can temporarily use more RAM.
+#   - Add a 2 GiB swap file on the host to absorb Chromium/MySQL memory spikes.
+
+x-low-log: &low-log
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+  web:
+    cpus: "0.15"
+    mem_limit: 64m
+    mem_reservation: 16m
+    logging: *low-log
+
+  cloudflared:
+    cpus: "0.10"
+    mem_limit: 64m
+    mem_reservation: 16m
+    logging: *low-log
+
+  api:
+    cpus: "0.35"
+    mem_limit: 128m
+    mem_reservation: 32m
+    environment:
+      GOGC: "80"
+      GOMEMLIMIT: "96MiB"
+      WECHAT_RSS_MAX_ARTICLES: "${WECHAT_RSS_LOW_MEM_MAX_ARTICLES:-2000}"
+    logging: *low-log
+
+  we-mp-rss:
+    cpus: "0.80"
+    mem_limit: 768m
+    mem_reservation: 256m
+    shm_size: "${WE_MP_RSS_LOW_MEM_SHM_SIZE:-512m}"
+    environment:
+      RSS_PAGE_SIZE: "${WE_MP_RSS_LOW_MEM_PAGE_SIZE:-50}"
+    logging: *low-log
+
+  mysql:
+    cpus: "0.70"
+    mem_limit: 640m
+    mem_reservation: 384m
+    command:
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=256M
+      - --max-connections=30
+      - --table-open-cache=200
+      - --tmp-table-size=32M
+      - --max-heap-table-size=32M
+      - --skip-name-resolve
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    logging: *low-log

@@ -1,0 +1,31 @@
+{
+    // 终端编码设置
+    
+    // 自动检测文件编码
+    "files.autoGuessEncoding": true,
+    
+    // 设置默认行尾符
+    "files.eol": "\n",
+    
+    // 启用中文语言包
+    "extensions.autoCheckUpdates": true,
+    
+    // 设置界面字体（可选）
+    "codingcopilot.autoRun": true,
+    
+    // 设置默认终端为cmd
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.profiles.windows": {
+        "Command Prompt": {
+            "path": "cmd.exe",
+            "args": []
+        }
+    },
+    
+    // Python相关配置
+    "python.defaultInterpreterPath": "E:/conda/envs/werss/python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "diffEditor.renderSideBySide": true
+}

@@ -1,12 +1,12 @@
 # 檐枫网站本地 API 文档
 
-本项目当前使用 `server.mjs` 提供本地演示 API，默认地址为 `http://localhost:3001`。
+本项目当前使用 `backend/` 中的 Go API 提供本地和 Docker 后端服务，默认地址为 `http://localhost:3001`。
 
 ## 数据源
 
-- 文章和视频数据存储在 `db.json`
+- 文章和视频数据存储在 MySQL，首次启动时可从 `db.json` 导入演示数据
 - AI 助手通过服务端读取 `DIFY_API_KEY` 后转发到 Dify
-- 前端默认读取 `VITE_API_URL`，未配置时使用 `http://localhost:3001`
+- 前端默认请求同源 `/api`；本地开发由 Vite 代理到 `http://localhost:3001`
 
 ## 文章接口
 
@@ -98,4 +98,53 @@
 
 ## 微信图片说明
 
-微信公众号图片常有防盗链限制。正式接入时建议后端抓取并存储封面图，再把稳定的 `coverUrl` 返回给前端。
+RSS 同步会优先读取 `<enclosure type="image/*">` 中的封面地址，其次从正文 HTML 中提取第一张图片。同步后的 `coverUrl` 会返回给前端直接展示；如果旧数据中存在不可访问的本地 `/uploads/...` 封面，再次同步时会用 RSS 封面回填。
+
+## 公众号 RSS 同步接口
+
+### POST `/wechat-articles/sync`
+
+管理员接口。后端会读取 `WECHAT_RSS_FEED_URLS` 配置，从 `we-mp-rss` 拉取 RSS/Atom 内容，按 `sourceName + externalId` 和文章 URL 去重后写入 `wechat_articles`。
+
+`sourceName` 保留 RSS 同步名；`displaySourceName` 是官网展示名。两者不一致时，用环境变量配置映射：
+
+```ini
+WECHAT_RSS_DISPLAY_NAME_MAP=番剧鉴赏组=涧桐现视研
+```
+
+请求头：
+
+```http
+Authorization: Bearer <admin-token>
+```
+
+响应：
+
+```json
+{
+  "fetched": 2,
+  "created": 2,
+  "skipped": 0,
+  "failed": 0
+}
+```
+
+同步后的文章示例：
+
+```json
+{
+  "id": "uuid",
+  "title": "公众号推文标题",
+  "summary": "摘要",
+  "coverUrl": "https://mmbiz.qpic.cn/...",
+  "wechatUrl": "https://mp.weixin.qq.com/s/...",
+  "publishedAt": "2026-07-02",
+  "isPublished": true,
+  "sortOrder": 0,
+  "sourceName": "番剧鉴赏组",
+  "displaySourceName": "涧桐现视研",
+  "externalId": "rss-guid"
+}
+```
+
+本地 Docker 部署时，`we-mp-rss` 由 `docker-compose.yml` 启动，默认只监听 `127.0.0.1:8001`，不会对公网开放。
